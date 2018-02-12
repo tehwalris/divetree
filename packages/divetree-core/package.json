@@ -2,7 +2,8 @@
   "name": "divetree",
   "version": "0.1.0",
   "description": "Displays a tree which you can dive into interactively.",
-  "main": "src/index.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest"
@@ -18,19 +19,20 @@
     "@types/node": "^9.4.5",
     "@types/ramda": "^0.25.17",
     "tsc": "^1.20150623.0",
-    "typescript": "^2.7.1"
+    "typescript": "^2.7.1",
+    "@types/jest": "^22.1.2",
+    "ts-jest": "^22.0.4",
+    "jest": "^22.2.2"
   },
   "dependencies": {
-    "@types/jest": "^22.1.2",
-    "jest": "^22.2.2",
     "kiwi.js": "^1.0.1",
-    "ramda": "^0.25.0",
-    "ts-jest": "^22.0.4"
+    "ramda": "^0.25.0"
   },
   "jest": {
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
+    "rootDir": "src",
     "testRegex": "(/__tests__/.*)\\.(tsx?)$",
     "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
   }

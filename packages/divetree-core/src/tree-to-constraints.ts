@@ -11,7 +11,7 @@ import * as kiwi from "kiwi.js";
 import { OutputNode } from "./interfaces/output";
 import * as R from "ramda";
 
-class IntervalVar {
+export class IntervalVar {
   start = new kiwi.Variable();
   end = new kiwi.Variable();
 
@@ -20,7 +20,7 @@ class IntervalVar {
   }
 }
 
-class RectVar {
+export class RectVar {
   intervals = [new IntervalVar(), new IntervalVar()];
 
   constructor(public id: Id | undefined) {
@@ -69,6 +69,11 @@ export interface Config {
   };
 }
 
+export type ConvertAny = (
+  node: LooseNode | TightNode,
+  config: Config,
+) => Output;
+
 function _convertAny(node: LooseNode | TightNode, config: Config): Output {
   switch (node.kind) {
     case NodeKind.Loose:
@@ -83,7 +88,7 @@ function _convertAny(node: LooseNode | TightNode, config: Config): Output {
 export function convertLoose(
   node: LooseNode,
   config: Config,
-  convertAny: typeof _convertAny = _convertAny,
+  convertAny: ConvertAny = _convertAny,
 ): Output {
   const boundingRect = new RectVar(undefined);
   const parent = convertAny(node.parent, config);
@@ -229,7 +234,7 @@ export function convertLoose(
 export function convertTightSplit(
   node: TightSplitNode,
   config: Config,
-  convertAny: typeof _convertAny = _convertAny,
+  convertAny: ConvertAny = _convertAny,
 ): Output {
   if (!node.children.length) {
     throw new Error("TightSplitNode must have children");
