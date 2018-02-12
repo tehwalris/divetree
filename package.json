@@ -1,0 +1,37 @@
+{
+  "name": "divetree",
+  "version": "0.1.0",
+  "description": "Displays a tree which you can dive into interactively.",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.dolansoft.org/philippe/divetree"
+  },
+  "keywords": ["tree", "dive", "explore", "display"],
+  "author": "Philippe \"tehwalris\" Voinov",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^9.4.5",
+    "@types/ramda": "^0.25.17",
+    "prettier": "^1.10.2",
+    "tsc": "^1.20150623.0",
+    "typescript": "^2.7.1"
+  },
+  "dependencies": {
+    "@types/jest": "^22.1.2",
+    "jest": "^22.2.2",
+    "ramda": "^0.25.0",
+    "ts-jest": "^22.0.4"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*)\\.(tsx?)$",
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
+  }
+}
