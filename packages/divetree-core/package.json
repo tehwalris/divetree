@@ -11,18 +11,12 @@
     "type": "git",
     "url": "https://git.dolansoft.org/philippe/divetree"
   },
-  "keywords": [
-    "tree",
-    "dive",
-    "explore",
-    "display"
-  ],
+  "keywords": ["tree", "dive", "explore", "display"],
   "author": "Philippe \"tehwalris\" Voinov",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^9.4.5",
     "@types/ramda": "^0.25.17",
-    "prettier": "^1.10.2",
     "tsc": "^1.20150623.0",
     "typescript": "^2.7.1"
   },
@@ -38,13 +32,6 @@
       "^.+\\.tsx?$": "ts-jest"
     },
     "testRegex": "(/__tests__/.*)\\.(tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ]
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
   }
 }
