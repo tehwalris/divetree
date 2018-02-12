@@ -74,7 +74,10 @@ export type ConvertAny = (
   config: Config,
 ) => Output;
 
-function _convertAny(node: LooseNode | TightNode, config: Config): Output {
+export function _convertAny(
+  node: LooseNode | TightNode,
+  config: Config,
+): Output {
   switch (node.kind) {
     case NodeKind.Loose:
       return convertLoose(node, config, _convertAny);

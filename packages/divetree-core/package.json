@@ -1,5 +1,5 @@
 {
-  "name": "divetree",
+  "name": "divetree-core",
   "version": "0.1.0",
   "description": "Displays a tree which you can dive into interactively.",
   "main": "lib/index.js",
