@@ -101,7 +101,10 @@ describe("convertTightSplit", () => {
         },
       ] as TightLeafNode[],
     };
-    const output = convertTightSplit(input, {} as any);
+    const output = convertTightSplit(input, {
+      tightSplit: { equalSize: true },
+      loose: {} as any,
+    });
     const solver = new kiwi.Solver();
     output.constraints.forEach(e => solver.addConstraint(e));
     return { ids, input, output, solver };
@@ -251,6 +254,7 @@ describe("convertLoose", () => {
         singleChildDistance: 5,
         multiChildDistance: 10,
       },
+      tightSplit: {} as any,
     });
     const expected = [
       {
@@ -304,6 +308,7 @@ describe("convertLoose", () => {
         singleChildDistance: 5,
         multiChildDistance: 10,
       },
+      tightSplit: {} as any,
     });
     const expected = [
       {
@@ -365,6 +370,7 @@ describe("convertLoose", () => {
           singleChildDistance: 5,
           multiChildDistance: 10,
         },
+        tightSplit: {} as any,
       });
       const solver = new kiwi.Solver();
       output.constraints.forEach(e => solver.addConstraint(e));

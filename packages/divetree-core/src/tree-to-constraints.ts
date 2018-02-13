@@ -67,6 +67,9 @@ export interface Config {
 
     verticalPadding: number; // between bounding box and parent/children
   };
+  tightSplit: {
+    equalSize: boolean; // eg. equal height with Split.Stacked
+  };
 }
 
 export type ConvertAny = (
@@ -255,14 +258,16 @@ export function convertTightSplit(
         b.intervals[shiftAxis].start,
       ),
     );
-    // children have same size in shiftAxis
-    constraints.push(
-      new kiwi.Constraint(
-        a.intervals[shiftAxis].getWidthExpr(),
-        kiwi.Operator.Eq,
-        b.intervals[shiftAxis].getWidthExpr(),
-      ),
-    );
+    if (config.tightSplit.equalSize) {
+      // children have same size in shiftAxis
+      constraints.push(
+        new kiwi.Constraint(
+          a.intervals[shiftAxis].getWidthExpr(),
+          kiwi.Operator.Eq,
+          b.intervals[shiftAxis].getWidthExpr(),
+        ),
+      );
+    }
   }
 
   // children fill bounding rect

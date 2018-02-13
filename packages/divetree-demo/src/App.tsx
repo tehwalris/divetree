@@ -1,47 +1,91 @@
 import * as React from "react";
-import { doLayout, NodeKind, TightNode, Split } from "divetree-core";
+import { doLayout, NodeKind, Split, LooseNode } from "divetree-core";
 
 const output = doLayout(
   {
-    kind: NodeKind.Loose as NodeKind.Loose,
+    kind: NodeKind.Loose,
     parent: {
-      kind: NodeKind.TightSplit,
-      split: Split.Stacked,
-      children: [
-        {
-          kind: NodeKind.TightLeaf,
-          id: "parent-top",
-          size: [200, 50],
-        },
-        {
-          kind: NodeKind.TightLeaf,
-          id: "parent-bottom-1",
-          size: [200, 50],
-        },
-        {
-          kind: NodeKind.TightLeaf,
-          id: "parent-bottom-2",
-          size: [200, 50],
-        },
-      ],
-    },
-    children: [[500, 100], [300, 100], [550, 150]].map((e, i) => ({
       kind: NodeKind.TightLeaf,
-      id: i,
-      size: e,
-    })) as TightNode[],
+      id: "for i in 1...100",
+      size: [150, 50],
+    },
+    children: [
+      {
+        kind: NodeKind.Loose,
+        parent: {
+          kind: NodeKind.TightLeaf,
+          id: "if",
+          size: [50, 50],
+        },
+        children: [
+          {
+            kind: NodeKind.Loose,
+            parent: {
+              kind: NodeKind.TightSplit,
+              split: Split.SideBySide,
+              children: [
+                {
+                  kind: NodeKind.TightLeaf,
+                  id: "and",
+                  size: [50, 50],
+                },
+                {
+                  kind: NodeKind.TightSplit,
+                  split: Split.Stacked,
+                  children: [
+                    {
+                      kind: NodeKind.TightLeaf,
+                      id: "and-part-1",
+                      size: [110, 25],
+                    },
+                    {
+                      kind: NodeKind.TightLeaf,
+                      id: "and-part-2",
+                      size: [110, 25],
+                    },
+                  ],
+                },
+              ],
+            },
+            children: [
+              {
+                kind: NodeKind.TightLeaf,
+                id: "print-fizzbuzz",
+                size: [180, 50],
+              },
+            ],
+          },
+          ...([0, 1, 2].map(i => ({
+            kind: NodeKind.Loose,
+            parent: {
+              kind: NodeKind.TightLeaf,
+              id: "condition-0",
+              size: [160, 50],
+            },
+            children: [
+              {
+                kind: NodeKind.TightLeaf,
+                id: "print-0",
+                size: [150, 50],
+              },
+            ],
+          })) as LooseNode[]),
+        ],
+      },
+    ],
   },
   {
     loose: {
-      verticalPadding: 10,
+      verticalPadding: 0,
       siblingDistance: 20,
       singleChildDistance: 20,
       multiChildDistance: 40,
     },
+    tightSplit: {
+      equalSize: false,
+    },
   },
 );
-
-console.log(output);
 
 const styles: { [key: string]: React.CSSProperties } = {
   wrapper: {
