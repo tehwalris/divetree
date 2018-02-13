@@ -8,7 +8,7 @@ import {
   Split,
 } from "./interfaces/input";
 import * as kiwi from "kiwi.js";
-import { OutputNode } from "./interfaces/output";
+import { InternalOutputNode } from "./interfaces/output";
 import * as R from "ramda";
 
 export class IntervalVar {
@@ -42,7 +42,7 @@ export class RectVar {
     });
   }
 
-  build(): OutputNode | undefined {
+  build(): InternalOutputNode {
     return {
       id: this.id,
       size: this.intervals.map(e => e.end.value() - e.start.value()),
@@ -226,11 +226,7 @@ export function convertLoose(
   return {
     constraints,
     boundingRect,
-    rects: [
-      ...R.chain(e => e.rects, children),
-      parent.boundingRect,
-      boundingRect,
-    ],
+    rects: [...R.chain(e => e.rects, [...children, parent]), boundingRect],
   };
 }
 

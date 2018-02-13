@@ -1,34 +1,75 @@
 import * as React from "react";
-import { convertAny, NodeKind } from "divetree-core";
+import { doLayout, NodeKind, TightNode, Split } from "divetree-core";
 
-const output = convertAny(
+const output = doLayout(
   {
-    kind: NodeKind.TightLeaf,
-    id: 123,
-    size: [50, 10],
+    kind: NodeKind.Loose as NodeKind.Loose,
+    parent: {
+      kind: NodeKind.TightSplit,
+      split: Split.Stacked,
+      children: [
+        {
+          kind: NodeKind.TightLeaf,
+          id: "parent-top",
+          size: [200, 50],
+        },
+        {
+          kind: NodeKind.TightLeaf,
+          id: "parent-bottom-1",
+          size: [200, 50],
+        },
+        {
+          kind: NodeKind.TightLeaf,
+          id: "parent-bottom-2",
+          size: [200, 50],
+        },
+      ],
+    },
+    children: [[500, 100], [300, 100], [550, 150]].map((e, i) => ({
+      kind: NodeKind.TightLeaf,
+      id: i,
+      size: e,
+    })) as TightNode[],
   },
   {
     loose: {
-      verticalPadding: 7,
-      siblingDistance: 8,
-      singleChildDistance: 5,
-      multiChildDistance: 10,
+      verticalPadding: 10,
+      siblingDistance: 20,
+      singleChildDistance: 20,
+      multiChildDistance: 40,
     },
   },
 );
 
 console.log(output);
 
+const styles: { [key: string]: React.CSSProperties } = {
+  wrapper: {
+    position: "relative",
+  },
+  rect: {
+    position: "absolute",
+    border: "1px solid black",
+    boxSizing: "border-box",
+  },
+};
+
 class App extends React.Component {
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.tsx</code> and save to reload.
-        </p>
+      <div style={styles.wrapper}>
+        {output.map(e => (
+          <div
+            key={e.id}
+            style={{
+              ...styles.rect,
+              top: e.offset[1],
+              left: e.offset[0],
+              width: e.size[0],
+              height: e.size[1],
+            }}
+          />
+        ))}
       </div>
     );
   }

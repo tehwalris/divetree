@@ -16,7 +16,7 @@ import * as kiwi from "kiwi.js";
 import * as R from "ramda";
 
 describe("convertTightLeaf", () => {
-  const id = Symbol("test id");
+  const id = "test id";
   const output = convertTightLeaf({
     kind: NodeKind.TightLeaf,
     id: id,
@@ -79,7 +79,7 @@ describe("convertTightSplit", () => {
     output: Output;
     solver: kiwi.Solver;
   } {
-    const ids = ["A", "B", "C"].map(e => Symbol(e));
+    const ids = ["A", "B", "C"];
     const input = {
       kind: NodeKind.TightSplit as NodeKind.TightSplit,
       split,
@@ -234,7 +234,7 @@ describe("convertTightSplit", () => {
 
 describe("convertLoose", () => {
   test("(no children)", () => {
-    const id = Symbol("P");
+    const id = "P";
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
       parent: {
@@ -280,8 +280,8 @@ describe("convertLoose", () => {
   });
 
   test("(single child)", () => {
-    const parentId = Symbol("P");
-    const childId = Symbol("A");
+    const parentId = "P";
+    const childId = "A";
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
       parent: {
@@ -344,7 +344,7 @@ describe("convertLoose", () => {
       output: Output;
       solver: kiwi.Solver;
     } {
-      const ids = ["A", "B", "C", "P"].map(e => Symbol(e));
+      const ids = ["A", "B", "C", "P"];
       const input = {
         kind: NodeKind.Loose as NodeKind.Loose,
         parent: {

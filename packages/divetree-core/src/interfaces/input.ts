@@ -1,4 +1,4 @@
-export type Id = {};
+export type Id = string | number | undefined;
 
 export enum NodeKind {
   Loose,

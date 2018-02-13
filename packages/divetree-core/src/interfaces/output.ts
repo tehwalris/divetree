@@ -1,7 +1,17 @@
 import { Id } from "./input";
 
-export interface OutputNode {
+export interface InternalOutputNode {
   id: Id | undefined;
   size: number[];
   offset: number[];
+}
+
+export interface PublicOutputNode extends InternalOutputNode {
+  id: Id;
+}
+
+export function isPublicOutputNode(
+  v: InternalOutputNode,
+): v is PublicOutputNode {
+  return v.id !== undefined;
 }
