@@ -35,15 +35,128 @@ L1      |L1
   T3    |  T3
         |  T4
   T5    |
-1 2 3
+2 3
 1 <- 4
-1 -> 5
-  `),
+1 -> 5`),
   );
 
-  test.skip("what happens if type of node changes, but id remains", () => {
-    fail("TODO");
-  });
+  test(
+    "no change",
+    templatedTest(`
+L1     |L1
+ S     | S
+  T2   |  T2
+  T3   |  T3
+ L4    | L4
+  T5   |  T5
+  T6   |  T6
+  T7   |  T7
+2 3 5 6 7`),
+  );
+
+  test(
+    "type of node changes (across levels)",
+    templatedTest(`
+L1  |L2
+ T2 | T1
+1 -> 2
+2 <- 1`),
+  );
+
+  test(
+    "type of node changes (parent node)",
+    templatedTest(`
+S   |L3
+ T1 | T1
+ T2 | T2
+1 2`),
+  );
+
+  test(
+    "children reordered",
+    templatedTest(`
+S    |S
+  T2 | T3
+  T1 | T2
+  T3 | T1
+1 2 3`),
+  );
+
+  test(
+    "children leave/enter with split root",
+    templatedTest(`
+S    |S
+ T1  | T2
+ T3  | T3
+3
+0 -> 1
+0 <- 2`),
+  );
+
+  test(
+    "children change parent",
+    templatedTest(`
+S     |S
+ L1   | L1
+  T3  |  T4
+ L2   | L2
+  T4  |  T3
+3 4`),
+  );
+
+  test(
+    "loose nodes can't leave/enter",
+    templatedTest(`
+S     |S
+ L1   | L2`),
+  );
+
+  test(
+    "reordering in deep splits",
+    templatedTest(`
+S     |S
+ T1   | T2
+ S    | S
+  T2  |  T3
+  T3  |  T4
+      |  T1
+ S    |
+  T4  |
+1 2 3 4`),
+  );
+
+  test(
+    "flattening splits",
+    templatedTest(`
+S     |S
+ T1   | T1
+ S    |
+  T2  | T2
+  S   |
+   T3 | T3
+1 2 3`),
+  );
+
+  test(
+    "move between LooseNode parent and children fields",
+    templatedTest(`
+L1    |L1
+ T2   | T3
+ T3   | T2
+2 3`),
+  );
+
+  test(
+    "move between LooseNode parent and children fields (with splits)",
+    templatedTest(`
+L1    |L1
+ S    | S
+  T2  |  T3
+  T3  |  T4
+ S    | S
+  T4  |  T2
+2 3 4`),
+  );
 
   describe("meta", () => {
     test("parse tree", () => {
