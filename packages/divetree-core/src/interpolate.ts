@@ -39,13 +39,16 @@ export function makeInterpolator(
   ): Interpolator => t => {
     const lifecycle = _lifecycle(t);
     const finalMix = _finalMix(t);
-    const origin = mixVector(
-      getCenterLeft(before.get(animation.parent)),
-      getCenterLeft(after.get(animation.parent)),
-      t,
-    );
+    const _origin =
+      animation.parent !== undefined &&
+      mixVector(
+        getCenterLeft(before.get(animation.parent)!),
+        getCenterLeft(after.get(animation.parent)!),
+        t,
+      );
     return animation.content.map(id => {
-      const e = target.get(id);
+      const e = target.get(id)!;
+      const origin = _origin || getCenterLeft(e);
       return {
         id,
         lifecycle,

@@ -159,4 +159,8 @@ describe("makeInterpolator", () => {
       ],
     ),
   );
+
+  test.skip("enter leave in special case", () => {
+    // const origin = _origin || ***getCenterLeft(e);***
+  });
 });
