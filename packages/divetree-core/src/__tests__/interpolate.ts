@@ -103,8 +103,8 @@ describe("makeInterpolator", () => {
         {
           id: "B",
           lifecycle: 0,
-          size: [12.5, 10],
-          offset: [47.5, 55],
+          size: [40, 40],
+          offset: [15, 40],
         },
       ],
     ),
@@ -123,7 +123,7 @@ describe("makeInterpolator", () => {
           id: "A",
           lifecycle: -0.75,
           size: [5, 2.5],
-          offset: [23.1, 28.1],
+          offset: [23.1, 35.3],
         },
         {
           id: "B",
