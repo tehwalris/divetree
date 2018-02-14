@@ -23,8 +23,9 @@ export class IntervalVar {
 export class RectVar {
   intervals = [new IntervalVar(), new IntervalVar()];
 
-  constructor(public id: Id | undefined) {
+  constructor(public id: Id | undefined, private visible: boolean) {
     this.id = id;
+    this.visible = visible;
   }
 
   setPreferedSize(size: number[]): kiwi.Constraint[] {
@@ -45,6 +46,7 @@ export class RectVar {
   build(): InternalOutputNode {
     return {
       id: this.id,
+      visible: this.visible,
       size: this.intervals.map(e => e.end.value() - e.start.value()),
       offset: this.intervals.map(e => e.start.value()),
     };
@@ -96,7 +98,7 @@ export function convertLoose(
   config: Config,
   convertAny: ConvertAny = _convertAny,
 ): Output {
-  const boundingRect = new RectVar(undefined);
+  const boundingRect = new RectVar(node.id, false);
   const parent = convertAny(node.parent, config);
   const children = node.children.map(e => convertAny(e, config));
   const constraints = R.chain(e => e.constraints, children);
@@ -243,7 +245,7 @@ export function convertTightSplit(
   }
   const [shiftAxis, equalAxis] =
     node.split === Split.SideBySide ? [0, 1] : [1, 0];
-  const boundingRect = new RectVar(undefined);
+  const boundingRect = new RectVar(undefined, false);
   const children = node.children.map(e => convertAny(e, config));
   const constraints = R.chain(e => e.constraints, children);
 
@@ -314,7 +316,7 @@ export function convertTightSplit(
 }
 
 export function convertTightLeaf(node: TightLeafNode): Output {
-  const rect = new RectVar(node.id);
+  const rect = new RectVar(node.id, true);
   return {
     boundingRect: rect,
     rects: [rect],

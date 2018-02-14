@@ -2,6 +2,7 @@ import { Id } from "./input";
 
 export interface InternalOutputNode {
   id: Id | undefined;
+  visible: boolean;
   size: number[];
   offset: number[];
 }

@@ -41,6 +41,7 @@ describe("convertTightLeaf", () => {
     solver.updateVariables();
     expect(rect.build()).toEqual({
       id: id,
+      visible: true,
       size: [200, 50],
       offset: [30, -20],
     });
@@ -53,6 +54,7 @@ describe("convertTightLeaf", () => {
     solver.updateVariables();
     expect(rect.build()).toEqual({
       id: id,
+      visible: true,
       size: [200, 50],
       offset: [30, -20],
     });
@@ -64,6 +66,7 @@ describe("convertTightLeaf", () => {
     solver.updateVariables();
     expect(rect.build()).toEqual({
       id: id,
+      visible: true,
       size: [200, 110],
       offset: [30, -10],
     });
@@ -123,21 +126,25 @@ describe("convertTightSplit", () => {
     const expected = [
       {
         id: ids[0],
+        visible: true,
         size: [55, 20],
         offset: [3, 7],
       },
       {
         id: ids[1],
+        visible: true,
         size: [55, 20],
         offset: [3, 27],
       },
       {
         id: ids[2],
+        visible: true,
         size: [55, 20],
         offset: [3, 47],
       },
       {
         id: undefined,
+        visible: false,
         size: [55, 60],
         offset: [3, 7],
       },
@@ -160,21 +167,25 @@ describe("convertTightSplit", () => {
     const expected = [
       {
         id: ids[0],
+        visible: true,
         size: [55, 20],
         offset: [3, 7],
       },
       {
         id: ids[1],
+        visible: true,
         size: [55, 20],
         offset: [58, 7],
       },
       {
         id: ids[2],
+        visible: true,
         size: [55, 20],
         offset: [113, 7],
       },
       {
         id: undefined,
+        visible: false,
         size: [165, 20],
         offset: [3, 7],
       },
@@ -197,21 +208,25 @@ describe("convertTightSplit", () => {
     const expected = [
       {
         id: ids[0],
+        visible: true,
         size: [60, 100],
         offset: [3, 7],
       },
       {
         id: ids[1],
+        visible: true,
         size: [60, 100],
         offset: [3, 107],
       },
       {
         id: ids[2],
+        visible: true,
         size: [60, 100],
         offset: [3, 207],
       },
       {
         id: undefined,
+        visible: false,
         size: [60, 300],
         offset: [3, 7],
       },
@@ -258,12 +273,14 @@ describe("convertLoose", () => {
     });
     const expected = [
       {
-        id: undefined,
+        id: "loose",
+        visible: false,
         offset: [3, 7],
         size: [30, 49],
       },
       {
         id: "parent",
+        visible: true,
         offset: [3, 14],
         size: [30, 35],
       },
@@ -311,17 +328,20 @@ describe("convertLoose", () => {
     });
     const expected = [
       {
-        id: undefined,
+        id: "loose",
+        visible: false,
         offset: [3, 7],
         size: [85, 49],
       },
       {
         id: "parent",
+        visible: true,
         offset: [3, 14],
         size: [30, 35],
       },
       {
         id: "child",
+        visible: true,
         offset: [38, 26.5],
         size: [50, 10],
       },
@@ -386,7 +406,7 @@ describe("convertLoose", () => {
       expect(
         output.rects.find(b => (input.parent as TightLeafNode).id === b.id),
       ).toBeTruthy();
-      expect(output.rects.filter(e => e.id === undefined).length).toBe(1);
+      expect(output.rects.filter(e => e.id === "loose").length).toBe(1);
     });
 
     test("typical layout", () => {
@@ -394,29 +414,34 @@ describe("convertLoose", () => {
       const expected = [
         // bounding rect
         {
-          id: undefined,
+          id: "loose",
+          visible: false,
           offset: [3, 7],
           size: [95, 75],
         },
         // parent
         {
           id: "parent",
+          visible: true,
           offset: [3, 27],
           size: [30, 35],
         },
         // children
         {
           id: 0,
+          visible: true,
           offset: [43, 14],
           size: [50, 10],
         },
         {
           id: 1,
+          visible: true,
           offset: [43, 32],
           size: [30, 20],
         },
         {
           id: 2,
+          visible: true,
           offset: [43, 60],
           size: [55, 15],
         },
