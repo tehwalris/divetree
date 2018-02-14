@@ -75,10 +75,10 @@ S   |L3
   test(
     "children reordered",
     templatedTest(`
-S    |S
-  T2 | T3
-  T1 | T2
-  T3 | T1
+S   |S
+ T2 | T3
+ T1 | T2
+ T3 | T1
 1 2 3`),
   );
 
@@ -94,9 +94,10 @@ S    |S
   );
 
   test(
-    "children change parent",
+    "children switch parent",
     templatedTest(`
-S     |S
+L5    |L5
+ T6   | T6
  L1   | L1
   T3  |  T4
  L2   | L2
@@ -107,8 +108,9 @@ S     |S
   test(
     "loose nodes can't leave/enter",
     templatedTest(`
-S     |S
- L1   | L2`),
+L1   |L2
+ T3  | T3
+3`),
   );
 
   test(
