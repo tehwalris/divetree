@@ -10,11 +10,11 @@ import {
 describe("planAnimation", () => {
   const templatedTest = (template: string) => () => {
     const testCase = parseCase(template);
-    const sort = (l: number[]) => R.sort((a, b) => a - b, l);
+    const sort: any = (l: number[]) => R.sort((a, b) => a - b, l);
     const actual = planAnimation(testCase.trees.before, testCase.trees.after);
     const actualSorted = actual.map(e => ({
       ...e,
-      content: sort(e.content as number[]),
+      content: sort(e.content),
     }));
     expect(actual.length).toBe(testCase.assert.length);
     testCase.assert.forEach(assertion => {
@@ -41,6 +41,24 @@ L1      |L1
   );
 
   test(
+    "complex example",
+    templatedTest(`
+L1     |L1
+ T9    | T9
+ L7    | L7
+  T2   |  T3
+       |  T8
+ L4    | L5
+  T5   |  T6
+  T8   |
+ T3    |
+3 8 9
+7 -> 2
+1 -> 5
+1 <- 6`),
+  );
+
+  test(
     "no change",
     templatedTest(`
 L1     |L1
@@ -55,12 +73,70 @@ L1     |L1
   );
 
   test(
+    "everything leaves",
+    templatedTest(`
+L1     |T8
+ S     |
+  T2   |
+  T3   |
+ L4    |
+  T5   |
+  T6   |
+  T7   |
+0 -> 2 3 5 6 7
+0 <- 8`),
+  );
+
+  test(
+    "everything enters",
+    templatedTest(`
+T8 |L1  
+   | S  
+   |  T2
+   |  T3
+   | L4 
+   |  T5
+   |  T6
+   |  T7
+0 -> 8
+0 <- 2 3 5 6 7`),
+  );
+
+  test(
+    "single children leave/enter",
+    templatedTest(`
+L1     |L1
+ T2    | T2
+ L4    | L4
+  T5   |  T7
+  T6   |  T8
+  T7   |
+2 7
+4 -> 5 6
+4 <- 8`),
+  );
+
+  test(
+    "subtree leaves/enters",
+    templatedTest(`
+L1     |L1
+ T2    | T2
+ L4    | L5
+  T5   |  T9
+  T6   |  T6
+  T7   |  T8
+2 6
+1 -> 5 7
+1 <- 9 8`),
+  );
+
+  test(
     "type of node changes (across levels)",
     templatedTest(`
 L1  |L2
  T2 | T1
-1 -> 2
-2 <- 1`),
+0 -> 2
+0 <- 1`),
   );
 
   test(
@@ -102,7 +178,7 @@ L5    |L5
   T3  |  T4
  L2   | L2
   T4  |  T3
-3 4`),
+3 4 6`),
   );
 
   test(
@@ -212,7 +288,7 @@ L4
 interface Case {
   title: string;
   trees: TreePair;
-  assert: GroupAssertion[];
+  assert: AnimationGroup[];
 }
 
 interface TreePair {
@@ -257,18 +333,18 @@ function parseTree(raw: string[]): NodeTemplate {
   raw.filter(R.trim).forEach(e => {
     const [_line, indentStr, kind, idStr] = e.match(
       /^( *)([LST])([1-9]\d*)? *$/,
-    );
+    )!;
     const cur = { id: +(idStr || ""), kind: kind as any, children: [] };
     const indent = indentStr.length;
     if (indent === parents.length + 1) {
-      parents.push(last);
+      parents.push(last!);
     } else if (indent < parents.length) {
       parents = parents.slice(0, indent);
     } else if (indent !== parents.length) {
       throw new Error("indent can't increase by more than 1");
     }
     if (indent) {
-      R.last(parents).children.push(cur);
+      R.last(parents)!.children.push(cur);
     } else {
       roots.push(cur);
     }
@@ -331,7 +407,7 @@ function parseAssertion(s: string): AnimationGroup {
   const strToList = (s: string) => s.split(" ").map(e => +e);
   if (enterLeaveMatch) {
     const [_line, parentStr, arrow, childrenStr] = enterLeaveMatch;
-    let parent = +parentStr;
+    let parent: number | undefined = +parentStr;
     if (parent === 0) {
       parent = undefined;
     }

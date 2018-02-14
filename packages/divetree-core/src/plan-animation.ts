@@ -33,12 +33,15 @@ function getChildren(node: Node): Node[] {
   }
 }
 
-function treeToIds(root: Node): Id[] {
+function treeToIds(
+  root: Node,
+  kind: NodeKind.TightLeaf | NodeKind.Loose,
+): Id[] {
   const ids: Id[] = [];
   crawl(
     root,
-    (e, context) => {
-      if (e.kind === NodeKind.TightLeaf || e.kind === NodeKind.Loose) {
+    e => {
+      if (e.kind === kind) {
         ids.push(e.id);
       }
     },
@@ -47,13 +50,112 @@ function treeToIds(root: Node): Id[] {
   return ids;
 }
 
+function indexTreeNodesById(
+  root: Node,
+  kind: NodeKind.TightLeaf | NodeKind.Loose,
+): Map<Id, Node> {
+  const out = new Map();
+  crawl(
+    root,
+    (e, context) => {
+      if (e.kind === kind) {
+        out.set(e.id, e);
+      }
+    },
+    { getChildren },
+  );
+  return out;
+}
+
+function indexTreeParentsByChildren(root: Node): Map<Node, Node> {
+  const out = new Map();
+  crawl(
+    root,
+    (e, context) => {
+      if (context.parent) {
+        out.set(e, context.parent);
+      }
+    },
+    { getChildren },
+  );
+  return out;
+}
+
 export function planAnimation(before: Node, after: Node): AnimationGroup[] {
   const animationGroups: AnimationGroup[] = [];
-  const commonIds = new Set(
-    R.intersection(treeToIds(before), treeToIds(after)),
-  );
+
+  const tightIds = {
+    before: treeToIds(before, NodeKind.TightLeaf),
+    after: treeToIds(after, NodeKind.TightLeaf),
+    common: [] as Id[],
+  };
+  tightIds.common = R.intersection(tightIds.before, tightIds.after);
+
+  if (tightIds.common.length) {
+    animationGroups.push({
+      kind: AnimationKind.Transform,
+      content: tightIds.common,
+    });
+  }
+
+  const looseIds = {
+    before: treeToIds(before, NodeKind.Loose),
+    after: treeToIds(after, NodeKind.Loose),
+    common: new Set<Id>(),
+  };
+  looseIds.common = new Set(R.intersection(looseIds.before, looseIds.after));
+
+  [
+    {
+      kind: AnimationKind.Leave as AnimationKind.Leave,
+      tree: before,
+      tightIdsOwn: tightIds.before,
+    },
+    {
+      kind: AnimationKind.Enter as AnimationKind.Enter,
+      tree: after,
+      tightIdsOwn: tightIds.after,
+    },
+  ].forEach(({ tree, kind, tightIdsOwn }) => {
+    const parents = indexTreeParentsByChildren(tree);
+    const tightById = indexTreeNodesById(tree, NodeKind.TightLeaf);
+    const changingByParent = new Map<Id | undefined, Id[]>();
+
+    R.difference(tightIdsOwn, tightIds.common).forEach(id => {
+      let changeParent: Node | undefined;
+      let cur = tightById.get(id);
+      while (
+        cur &&
+        !(cur.kind === NodeKind.Loose && looseIds.common.has(cur.id))
+      ) {
+        cur = parents.get(cur);
+      }
+      const parent = cur && cur.id;
+      const group = changingByParent.get(parent) || [];
+      group.push(id);
+      changingByParent.set(parent, group);
+    });
+
+    changingByParent.forEach((content, parent) => {
+      animationGroups.push({
+        kind,
+        parent: parent,
+        content: content,
+      });
+    });
+  });
+
   return animationGroups;
 }
+
+/*
+- iterate before tree
+  - everything which isn't common is leaving
+  - parent for leaving is closest common (=not leaving) loose node
+- iterate after tree
+  - everything which isn't common is entering
+  - parent for entering is closest common (=not leaving) loose node
+*/
 
 /*
 - what to do with tight parent node?
