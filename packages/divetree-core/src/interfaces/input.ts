@@ -1,4 +1,4 @@
-export type Id = string | number | undefined;
+export type Id = string | number;
 
 export enum NodeKind {
   Loose,
@@ -8,6 +8,7 @@ export enum NodeKind {
 
 export interface LooseNode {
   kind: NodeKind.Loose;
+  id: Id;
   parent: TightNode;
   children: Node[];
 }

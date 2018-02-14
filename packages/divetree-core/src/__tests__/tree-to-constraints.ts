@@ -237,12 +237,12 @@ describe("convertTightSplit", () => {
 
 describe("convertLoose", () => {
   test("(no children)", () => {
-    const id = "P";
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
+      id: "loose",
       parent: {
         kind: NodeKind.TightLeaf,
-        id: id,
+        id: "parent",
         size: [30, 35],
       } as TightLeafNode,
       children: [],
@@ -263,7 +263,7 @@ describe("convertLoose", () => {
         size: [30, 49],
       },
       {
-        id,
+        id: "parent",
         offset: [3, 14],
         size: [30, 35],
       },
@@ -284,19 +284,18 @@ describe("convertLoose", () => {
   });
 
   test("(single child)", () => {
-    const parentId = "P";
-    const childId = "A";
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
+      id: "loose",
       parent: {
         kind: NodeKind.TightLeaf,
-        id: parentId,
+        id: "parent",
         size: [30, 35],
       } as TightLeafNode,
       children: [
         {
           kind: NodeKind.TightLeaf,
-          id: childId,
+          id: "child",
           size: [50, 10],
         } as TightNode,
       ],
@@ -317,12 +316,12 @@ describe("convertLoose", () => {
         size: [85, 49],
       },
       {
-        id: parentId,
+        id: "parent",
         offset: [3, 14],
         size: [30, 35],
       },
       {
-        id: childId,
+        id: "child",
         offset: [38, 26.5],
         size: [50, 10],
       },
@@ -344,22 +343,21 @@ describe("convertLoose", () => {
 
   describe("(multiple children)", () => {
     function setup(): {
-      ids: {}[];
       input: LooseNode;
       output: Output;
       solver: kiwi.Solver;
     } {
-      const ids = ["A", "B", "C", "P"];
       const input = {
         kind: NodeKind.Loose as NodeKind.Loose,
+        id: "loose",
         parent: {
           kind: NodeKind.TightLeaf,
-          id: ids[3],
+          id: "parent",
           size: [30, 35],
         } as TightLeafNode,
         children: [[50, 10], [30, 20], [55, 15]].map((e, i) => ({
           kind: NodeKind.TightLeaf,
-          id: ids[i],
+          id: i,
           size: e,
         })) as TightNode[],
       };
@@ -374,7 +372,7 @@ describe("convertLoose", () => {
       });
       const solver = new kiwi.Solver();
       output.constraints.forEach(e => solver.addConstraint(e));
-      return { ids, input, output, solver };
+      return { input, output, solver };
     }
 
     test("passes through all rects and creates own", () => {
@@ -392,7 +390,7 @@ describe("convertLoose", () => {
     });
 
     test("typical layout", () => {
-      const { ids, output, solver } = setup();
+      const { output, solver } = setup();
       const expected = [
         // bounding rect
         {
@@ -402,23 +400,23 @@ describe("convertLoose", () => {
         },
         // parent
         {
-          id: ids[3],
+          id: "parent",
           offset: [3, 27],
           size: [30, 35],
         },
         // children
         {
-          id: ids[0],
+          id: 0,
           offset: [43, 14],
           size: [50, 10],
         },
         {
-          id: ids[1],
+          id: 1,
           offset: [43, 32],
           size: [30, 20],
         },
         {
-          id: ids[2],
+          id: 2,
           offset: [43, 60],
           size: [55, 15],
         },
