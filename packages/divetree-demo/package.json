@@ -20,6 +20,8 @@
     "@types/react": "^16.0.37",
     "@types/react-dom": "^16.0.4",
     "typescript": "^2.7.1",
-    "divetree-core": "^0.1.0"
+    "divetree-core": "^0.1.0",
+    "rc-slider": "^8.6.0",
+    "@types/rc-slider": "^8.2.3"
   }
 }

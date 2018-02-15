@@ -2,4 +2,4 @@
 
 export * from "./interfaces/input";
 export { PublicOutputNode as OutputNode } from "./interfaces/output";
-export { doLayout } from "./do-layout";
+export * from "./entry-points";
