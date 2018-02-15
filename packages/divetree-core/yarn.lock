@@ -2661,9 +2661,9 @@ tr46@^1.0.0:
   dependencies:
     punycode "^2.1.0"
 
-tree-crawl@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/tree-crawl/-/tree-crawl-1.0.4.tgz#48115843dd1f9e731eb1615560b477bddafbff9d"
+tree-crawl@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/tree-crawl/-/tree-crawl-1.0.5.tgz#0a3e2e6808756f9770c1cfbda84bc039976640a7"
 
 trim-right@^1.0.1:
   version "1.0.1"
