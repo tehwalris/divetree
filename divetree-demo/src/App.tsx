@@ -25,6 +25,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: "absolute",
     border: "1px solid black",
     boxSizing: "border-box",
+    background: "wheat",
+    overflow: "hidden",
   },
 };
 
@@ -59,6 +61,7 @@ class App extends React.Component {
                 width: e.size[0],
                 height: e.size[1],
                 opacity: 1 - Math.abs(e.lifecycle),
+                zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
               }}
             />
           ))}
