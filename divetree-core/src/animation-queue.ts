@@ -1,5 +1,6 @@
 import { Node } from "./interfaces/input";
 
+// must be stateless
 export type Spring = (
   args: {
     position: number;
@@ -9,15 +10,15 @@ export type Spring = (
   },
 ) => { position: number; velocity: number };
 
-class AnimationQueue<T extends {}, I> {
+export class AnimationQueue<T, I> {
   private points: [T, T, T, T | undefined];
-  private intervals: [I, I, I];
+  private intervals: [I, I, I | undefined];
   private position: number = 2;
   private velocity: number = 0;
 
   constructor(
     private spring: Spring,
-    private buildInterval: (a: T, b: T | undefined) => I,
+    private buildInterval: (a: T, b: T) => I,
     initial: T,
   ) {
     this.spring = spring;
@@ -25,11 +26,7 @@ class AnimationQueue<T extends {}, I> {
 
     this.points = [initial, initial, initial, undefined];
     const normalInterval = buildInterval(initial, initial);
-    this.intervals = [
-      normalInterval,
-      normalInterval,
-      buildInterval(initial, undefined),
-    ];
+    this.intervals = [normalInterval, normalInterval, undefined];
   }
 
   queueChange(target: T) {
@@ -44,7 +41,8 @@ class AnimationQueue<T extends {}, I> {
       this.shiftLeft();
       this.rebuildLastInterval();
     }
-    return { interval: this.intervals[2], progress: this.position - 1 };
+    const i = this.getCurrentIntervalIndex();
+    return { interval: this.intervals[i]!, progress: this.position - i };
   }
 
   private tickSpring(dtMillis: number, target: number) {
@@ -66,7 +64,15 @@ class AnimationQueue<T extends {}, I> {
   }
 
   private rebuildLastInterval() {
-    this.intervals[2] = this.buildInterval(this.points[2], this.points[3]);
+    const lastPoint = this.points[3];
+    this.intervals[2] = lastPoint
+      ? this.buildInterval(this.points[2], lastPoint)
+      : undefined;
+  }
+
+  private getCurrentIntervalIndex(): number {
+    const limit = this.intervals[2] === undefined ? 1 : 2;
+    return Math.max(0, Math.min(limit, Math.floor(this.position)));
   }
 }
 

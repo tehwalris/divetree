@@ -20,6 +20,7 @@
     "@types/node": "^9.4.5",
     "@types/ramda": "^0.25.17",
     "jest": "^22.2.2",
+    "jest-runner": "^22.3.0",
     "ts-jest": "^22.0.4",
     "tsc": "^1.20150623.0",
     "typescript": "^2.7.1"
