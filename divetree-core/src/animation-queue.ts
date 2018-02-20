@@ -1,27 +1,19 @@
 import { Node } from "./interfaces/input";
-
-// must be stateless
-export type Spring = (
-  args: {
-    position: number;
-    velocity: number;
-    dtMillis: number;
-    target: number;
-  },
-) => { position: number; velocity: number };
+import { Spring } from "./spring";
 
 export class AnimationQueue<T, I> {
   private points: [T, T, T, T | undefined];
   private intervals: [I, I, I | undefined];
   private position: number = 2;
   private velocity: number = 0;
+  private spring: Spring;
 
   constructor(
-    private spring: Spring,
+    statelessSpring: Spring,
     private buildInterval: (a: T, b: T) => I,
     initial: T,
   ) {
-    this.spring = spring;
+    this.spring = statelessSpring;
     this.buildInterval = buildInterval;
 
     this.points = [initial, initial, initial, undefined];

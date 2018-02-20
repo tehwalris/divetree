@@ -179,7 +179,6 @@ describe("AnimationQueue", () => {
     });
 
     // stabilize back in the "current" interval
-
     spring.mockReturnValueOnce({ position: 1.25, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["b", "c"],
