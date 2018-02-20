@@ -1,7 +1,11 @@
 import * as React from "react";
-import { doLayoutAnimated } from "divetree-core";
-import { beforeTree, afterTree } from "./data";
-import Slider from "rc-slider";
+import {
+  doLayoutAnimated,
+  createSpring,
+  AnimationQueue,
+  DrawRect,
+} from "divetree-core";
+import { trees } from "./data";
 
 const LAYOUT_CONFIG = {
   loose: {
@@ -15,7 +19,12 @@ const LAYOUT_CONFIG = {
   },
 };
 
-const output = doLayoutAnimated(beforeTree, afterTree, LAYOUT_CONFIG);
+const spring = createSpring({
+  stepMillis: 5,
+  precision: 0.01,
+  stiffness: 260,
+  damping: 24,
+});
 
 const styles: { [key: string]: React.CSSProperties } = {
   treeWrapper: {
@@ -31,27 +40,64 @@ const styles: { [key: string]: React.CSSProperties } = {
 };
 
 class App extends React.Component {
+  private queue = new AnimationQueue(
+    spring,
+    (a, b) => doLayoutAnimated(a, b, LAYOUT_CONFIG),
+    trees[0],
+  );
   state: {
-    t: number;
-  } = { t: 0 };
+    rects: DrawRect[];
+    isFirstAnimate: boolean;
+    lastT: number;
+    lastPushedIndex: number;
+  } = { rects: [], isFirstAnimate: true, lastT: 0, lastPushedIndex: 0 };
 
-  onSliderChange = (t: number) => {
-    this.setState({ t });
+  // TODO unmount
+  componentWillMount() {
+    this.tick(0);
+    window.requestAnimationFrame(this.animationCallback);
+    document.addEventListener("keydown", this.onKeyDown);
+  }
+
+  private animationCallback = (t: number) => {
+    const lastT = this.state.isFirstAnimate ? this.state.lastT : t;
+    this.tick(t - lastT);
+    requestAnimationFrame(this.animationCallback);
+    this.setState({ lastT: t });
   };
 
+  private tick(dt: number) {
+    const { progress, interval } = this.queue.tick(dt);
+    this.setState({ rects: interval(progress) });
+  }
+
+  private onKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowLeft":
+        this.switchView(-1);
+        break;
+      case "ArrowRight":
+        this.switchView(1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  private switchView(delta: number) {
+    const nextIndex = this.state.lastPushedIndex + delta;
+    if (nextIndex < 0 || nextIndex + 1 >= trees.length) {
+      return;
+    }
+    this.queue.queueChange(trees[nextIndex]);
+    this.setState({ lastPushedIndex: nextIndex });
+  }
+
   render() {
-    const { t } = this.state;
     return (
       <div>
-        <Slider
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={this.onSliderChange}
-          value={t}
-        />
         <div style={styles.treeWrapper}>
-          {output(t).map(e => (
+          {this.state.rects.map(e => (
             <div
               key={e.id}
               style={{
