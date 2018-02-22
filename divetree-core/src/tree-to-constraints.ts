@@ -69,35 +69,23 @@ export interface Config {
 
     verticalPadding: number; // between bounding box and parent/children
   };
-  tightSplit: {
-    equalSize: boolean; // eg. equal height with Split.Stacked
-  };
 }
 
-export type ConvertAny = (
-  node: LooseNode | TightNode,
-  config: Config,
-) => Output;
-
-export function _convertAny(
+export function convertAny(
   node: LooseNode | TightNode,
   config: Config,
 ): Output {
   switch (node.kind) {
     case NodeKind.Loose:
-      return convertLoose(node, config, _convertAny);
+      return convertLoose(node, config);
     case NodeKind.TightSplit:
-      return convertTightSplit(node, config, _convertAny);
+      return convertTightSplit(node, config);
     case NodeKind.TightLeaf:
       return convertTightLeaf(node);
   }
 }
 
-export function convertLoose(
-  node: LooseNode,
-  config: Config,
-  convertAny: ConvertAny = _convertAny,
-): Output {
+function convertLoose(node: LooseNode, config: Config): Output {
   const boundingRect = new RectVar(node.id, false);
   const parent = convertAny(node.parent, config);
   const children = node.children.map(e => convertAny(e, config));
@@ -235,11 +223,7 @@ export function convertLoose(
   };
 }
 
-export function convertTightSplit(
-  node: TightSplitNode,
-  config: Config,
-  convertAny: ConvertAny = _convertAny,
-): Output {
+function convertTightSplit(node: TightSplitNode, config: Config): Output {
   if (!node.children.length) {
     throw new Error("TightSplitNode must have children");
   }
@@ -260,7 +244,7 @@ export function convertTightSplit(
         b.intervals[shiftAxis].start,
       ),
     );
-    if (config.tightSplit.equalSize) {
+    if (false) {
       // children have same size in shiftAxis
       constraints.push(
         new kiwi.Constraint(
@@ -315,7 +299,7 @@ export function convertTightSplit(
   };
 }
 
-export function convertTightLeaf(node: TightLeafNode): Output {
+function convertTightLeaf(node: TightLeafNode): Output {
   const rect = new RectVar(node.id, true);
   return {
     boundingRect: rect,

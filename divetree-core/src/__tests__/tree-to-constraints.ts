@@ -1,9 +1,4 @@
-import {
-  convertTightLeaf,
-  convertTightSplit,
-  Output,
-  convertLoose,
-} from "../tree-to-constraints";
+import { Output, convertAny } from "../tree-to-constraints";
 import {
   NodeKind,
   Split,
@@ -17,11 +12,14 @@ import * as R from "ramda";
 
 describe("convertTightLeaf", () => {
   const id = "test id";
-  const output = convertTightLeaf({
-    kind: NodeKind.TightLeaf,
-    id: id,
-    size: [200, 50],
-  });
+  const output = convertAny(
+    {
+      kind: NodeKind.TightLeaf,
+      id: id,
+      size: [200, 50],
+    },
+    {} as any,
+  );
   const rect = output.boundingRect;
 
   const solver = new kiwi.Solver();
@@ -104,8 +102,7 @@ describe("convertTightSplit", () => {
         },
       ] as TightLeafNode[],
     };
-    const output = convertTightSplit(input, {
-      tightSplit: { equalSize: true },
+    const output = convertAny(input, {
       loose: {} as any,
     });
     const solver = new kiwi.Solver();
@@ -127,25 +124,25 @@ describe("convertTightSplit", () => {
       {
         id: ids[0],
         visible: true,
-        size: [55, 20],
+        size: [55, 10],
         offset: [3, 7],
       },
       {
         id: ids[1],
         visible: true,
         size: [55, 20],
-        offset: [3, 27],
+        offset: [3, 17],
       },
       {
         id: ids[2],
         visible: true,
-        size: [55, 20],
-        offset: [3, 47],
+        size: [55, 15],
+        offset: [3, 37],
       },
       {
         id: undefined,
         visible: false,
-        size: [55, 60],
+        size: [55, 45],
         offset: [3, 7],
       },
     ];
@@ -168,25 +165,25 @@ describe("convertTightSplit", () => {
       {
         id: ids[0],
         visible: true,
-        size: [55, 20],
+        size: [50, 20],
         offset: [3, 7],
       },
       {
         id: ids[1],
         visible: true,
-        size: [55, 20],
-        offset: [58, 7],
+        size: [30, 20],
+        offset: [53, 7],
       },
       {
         id: ids[2],
         visible: true,
         size: [55, 20],
-        offset: [113, 7],
+        offset: [83, 7],
       },
       {
         id: undefined,
         visible: false,
-        size: [165, 20],
+        size: [135, 20],
         offset: [3, 7],
       },
     ];
@@ -203,31 +200,31 @@ describe("convertTightSplit", () => {
     expected.forEach(e => expect(actual).toContainEqual(e));
   });
 
-  test("stretches evenly", () => {
+  test("is stretchable in equal direction", () => {
     const { ids, output, solver } = setup(Split.Stacked);
     const expected = [
       {
         id: ids[0],
         visible: true,
-        size: [60, 100],
+        size: [80, 10],
         offset: [3, 7],
       },
       {
         id: ids[1],
         visible: true,
-        size: [60, 100],
-        offset: [3, 107],
+        size: [80, 20],
+        offset: [3, 17],
       },
       {
         id: ids[2],
         visible: true,
-        size: [60, 100],
-        offset: [3, 207],
+        size: [80, 15],
+        offset: [3, 37],
       },
       {
         id: undefined,
         visible: false,
-        size: [60, 300],
+        size: [80, 45],
         offset: [3, 7],
       },
     ];
@@ -240,13 +237,28 @@ describe("convertTightSplit", () => {
           solver.suggestValue(variable, e);
         });
       },
-      { start: [3, 7], end: [63, 307] },
+      { start: [3, 7], end: [83, 52] },
     );
     solver.updateVariables();
     const actual = output.rects.map(e => e.build());
 
     expect(expected.length).toBe(actual.length);
     expected.forEach(e => expect(actual).toContainEqual(e));
+  });
+
+  test("is stretchable in shift direction");
+
+  test("throws without children", () => {
+    const input = {
+      kind: NodeKind.TightSplit as NodeKind.TightSplit,
+      split: Split.SideBySide,
+      children: [],
+    };
+    expect(() => {
+      convertAny(input, {
+        loose: {} as any,
+      });
+    }).toThrow();
   });
 });
 
@@ -262,14 +274,13 @@ describe("convertLoose", () => {
       } as TightLeafNode,
       children: [],
     };
-    const output = convertLoose(input, {
+    const output = convertAny(input, {
       loose: {
         verticalPadding: 7,
         siblingDistance: 8,
         singleChildDistance: 5,
         multiChildDistance: 10,
       },
-      tightSplit: {} as any,
     });
     const expected = [
       {
@@ -317,14 +328,13 @@ describe("convertLoose", () => {
         } as TightNode,
       ],
     };
-    const output = convertLoose(input, {
+    const output = convertAny(input, {
       loose: {
         verticalPadding: 7,
         siblingDistance: 8,
         singleChildDistance: 5,
         multiChildDistance: 10,
       },
-      tightSplit: {} as any,
     });
     const expected = [
       {
@@ -381,14 +391,13 @@ describe("convertLoose", () => {
           size: e,
         })) as TightNode[],
       };
-      const output = convertLoose(input, {
+      const output = convertAny(input, {
         loose: {
           verticalPadding: 7,
           siblingDistance: 8,
           singleChildDistance: 5,
           multiChildDistance: 10,
         },
-        tightSplit: {} as any,
       });
       const solver = new kiwi.Solver();
       output.constraints.forEach(e => solver.addConstraint(e));

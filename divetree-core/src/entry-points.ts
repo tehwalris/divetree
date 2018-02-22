@@ -4,7 +4,7 @@ import {
   isPublicOutputNode,
   InternalOutputNode,
 } from "./interfaces/output";
-import { _convertAny, Config, Output } from "./tree-to-constraints";
+import { convertAny, Config, Output } from "./tree-to-constraints";
 import * as kiwi from "kiwi.js";
 import { Interpolator, makeInterpolator } from "./interpolate";
 import { Id } from "./interfaces/input";
@@ -46,7 +46,7 @@ export function doLayoutAnimated(
 }
 
 function _doLayout(root: Node, config: Config): Output {
-  const converted = _convertAny(root, config);
+  const converted = convertAny(root, config);
   const solver = new kiwi.Solver();
   converted.constraints.forEach(e => solver.addConstraint(e));
   [0, 0].forEach((v, i) => {

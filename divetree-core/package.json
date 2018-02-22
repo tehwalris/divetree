@@ -36,6 +36,9 @@
     },
     "rootDir": "src",
     "testRegex": "(/__tests__/.*)\\.(tsx?)$",
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"]
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "collectCoverage": true,
+    "mapCoverage": true,
+    "coverageDirectory": "../coverage"
   }
 }
