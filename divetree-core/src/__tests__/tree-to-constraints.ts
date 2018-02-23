@@ -25,12 +25,12 @@ describe("convertTightLeaf", () => {
   const solver = new kiwi.Solver();
   output.constraints.forEach(e => solver.addConstraint(e));
 
-  test("returns a single rect", () => {
+  it("returns a single rect", () => {
     expect(output.rects.length).toBe(1);
     expect(output.rects[0]).toBe(output.boundingRect);
   });
 
-  test("usually creates a rect with the target size", () => {
+  it("usually creates a rect with the target size", () => {
     solver.addEditVariable(rect.intervals[0].start, kiwi.Strength.strong);
     solver.suggestValue(rect.intervals[0].start, 30);
     solver.addEditVariable(rect.intervals[1].end, kiwi.Strength.strong);
@@ -45,7 +45,7 @@ describe("convertTightLeaf", () => {
     });
   });
 
-  test("rect cannot be compressed", () => {
+  it("rect cannot be compressed", () => {
     solver.addEditVariable(rect.intervals[1].start, kiwi.Strength.medium);
     solver.suggestValue(rect.intervals[1].start, -10);
 
@@ -58,7 +58,7 @@ describe("convertTightLeaf", () => {
     });
   });
 
-  test("rect can be expanded", () => {
+  it("rect can be expanded", () => {
     solver.suggestValue(rect.intervals[1].end, 100);
 
     solver.updateVariables();
@@ -110,7 +110,7 @@ describe("convertTightSplit", () => {
     return { ids, input, output, solver };
   }
 
-  test("passes through all rects and creates own", () => {
+  it("passes through all rects and creates own", () => {
     const { input, output } = setup(Split.Stacked);
     expect(output.rects.length).toBe(4);
     input.children.forEach(a => {
@@ -118,7 +118,7 @@ describe("convertTightSplit", () => {
     });
   });
 
-  test("creates the correct layout (base case, stacked)", () => {
+  it("creates the correct layout (base case, stacked)", () => {
     const { ids, output, solver } = setup(Split.Stacked);
     const expected = [
       {
@@ -159,7 +159,7 @@ describe("convertTightSplit", () => {
     expected.forEach(e => expect(actual).toContainEqual(e));
   });
 
-  test("creates the correct layout (base case, side-by-side)", () => {
+  it("creates the correct layout (base case, side-by-side)", () => {
     const { ids, output, solver } = setup(Split.SideBySide);
     const expected = [
       {
@@ -200,7 +200,7 @@ describe("convertTightSplit", () => {
     expected.forEach(e => expect(actual).toContainEqual(e));
   });
 
-  test("is stretchable in equal direction", () => {
+  it("is stretchable in equal direction", () => {
     const { ids, output, solver } = setup(Split.Stacked);
     const expected = [
       {
@@ -246,9 +246,9 @@ describe("convertTightSplit", () => {
     expected.forEach(e => expect(actual).toContainEqual(e));
   });
 
-  test("is stretchable in shift direction");
+  it("is stretchable in shift direction");
 
-  test("throws without children", () => {
+  it("throws without children", () => {
     const input = {
       kind: NodeKind.TightSplit as NodeKind.TightSplit,
       split: Split.SideBySide,
@@ -263,7 +263,7 @@ describe("convertTightSplit", () => {
 });
 
 describe("convertLoose", () => {
-  test("(no children)", () => {
+  it("(no children)", () => {
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
       id: "loose",
@@ -311,7 +311,7 @@ describe("convertLoose", () => {
     expected.forEach(e => expect(actual).toContainEqual(e));
   });
 
-  test("(single child)", () => {
+  it("(single child)", () => {
     const input = {
       kind: NodeKind.Loose as NodeKind.Loose,
       id: "loose",
@@ -404,7 +404,7 @@ describe("convertLoose", () => {
       return { input, output, solver };
     }
 
-    test("passes through all rects and creates own", () => {
+    it("passes through all rects and creates own", () => {
       const { input, output } = setup();
       expect(output.rects.length).toBe(1 + 1 + 3);
       input.children.forEach(a => {
@@ -418,7 +418,7 @@ describe("convertLoose", () => {
       expect(output.rects.filter(e => e.id === "loose").length).toBe(1);
     });
 
-    test("typical layout", () => {
+    it("typical layout", () => {
       const { output, solver } = setup();
       const expected = [
         // bounding rect

@@ -86,7 +86,7 @@ function drawRectEqualEnough(a: DrawRect, b: DrawRect): boolean {
 }
 
 describe("makeInterpolator", () => {
-  test(
+  it(
     "transform",
     templatedTest(
       {
@@ -110,7 +110,7 @@ describe("makeInterpolator", () => {
     ),
   );
 
-  test(
+  it(
     "enter",
     templatedTest(
       {
@@ -135,7 +135,7 @@ describe("makeInterpolator", () => {
     ),
   );
 
-  test(
+  it(
     "leave",
     templatedTest(
       {

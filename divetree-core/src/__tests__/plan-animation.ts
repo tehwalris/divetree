@@ -26,7 +26,7 @@ describe("planAnimation", () => {
     });
   };
 
-  test(
+  it(
     "simple example",
     templatedTest(`
 L1      |L1
@@ -40,7 +40,7 @@ L1      |L1
 1 -> 5`),
   );
 
-  test(
+  it(
     "complex example",
     templatedTest(`
 L1     |L1
@@ -58,7 +58,7 @@ L1     |L1
 1 <- 6`),
   );
 
-  test(
+  it(
     "no change",
     templatedTest(`
 L1     |L1
@@ -72,7 +72,7 @@ L1     |L1
 2 3 5 6 7`),
   );
 
-  test(
+  it(
     "everything leaves",
     templatedTest(`
 L1     |T8
@@ -87,7 +87,7 @@ L1     |T8
 0 <- 8`),
   );
 
-  test(
+  it(
     "everything enters",
     templatedTest(`
 T8 |L1  
@@ -102,7 +102,7 @@ T8 |L1
 0 <- 2 3 5 6 7`),
   );
 
-  test(
+  it(
     "single children leave/enter",
     templatedTest(`
 L1     |L1
@@ -116,7 +116,7 @@ L1     |L1
 4 <- 8`),
   );
 
-  test(
+  it(
     "subtree leaves/enters",
     templatedTest(`
 L1     |L1
@@ -130,7 +130,7 @@ L1     |L1
 1 <- 9 8`),
   );
 
-  test(
+  it(
     "type of node changes (across levels)",
     templatedTest(`
 L1  |L2
@@ -139,7 +139,7 @@ L1  |L2
 0 <- 1`),
   );
 
-  test(
+  it(
     "type of node changes (parent node)",
     templatedTest(`
 S   |L3
@@ -148,7 +148,7 @@ S   |L3
 1 2`),
   );
 
-  test(
+  it(
     "children reordered",
     templatedTest(`
 S   |S
@@ -158,7 +158,7 @@ S   |S
 1 2 3`),
   );
 
-  test(
+  it(
     "children leave/enter with split root",
     templatedTest(`
 S    |S
@@ -169,7 +169,7 @@ S    |S
 0 <- 2`),
   );
 
-  test(
+  it(
     "children switch parent",
     templatedTest(`
 L5    |L5
@@ -181,7 +181,7 @@ L5    |L5
 3 4 6`),
   );
 
-  test(
+  it(
     "loose nodes can't leave/enter",
     templatedTest(`
 L1   |L2
@@ -189,7 +189,7 @@ L1   |L2
 3`),
   );
 
-  test(
+  it(
     "reordering in deep splits",
     templatedTest(`
 S     |S
@@ -203,7 +203,7 @@ S     |S
 1 2 3 4`),
   );
 
-  test(
+  it(
     "flattening splits",
     templatedTest(`
 S     |S
@@ -215,7 +215,7 @@ S     |S
 1 2 3`),
   );
 
-  test(
+  it(
     "move between LooseNode parent and children fields",
     templatedTest(`
 L1    |L1
@@ -224,7 +224,7 @@ L1    |L1
 2 3`),
   );
 
-  test(
+  it(
     "move between LooseNode parent and children fields (with splits)",
     templatedTest(`
 L1    |L1
@@ -237,7 +237,7 @@ L1    |L1
   );
 
   describe("meta", () => {
-    test("parse tree", () => {
+    it("parse tree", () => {
       const input = `
 L4
  S
