@@ -1,13 +1,14 @@
 import { NodeKind, Split, LooseNode } from "divetree-core";
 
 export const trees: LooseNode[] = [];
+export const focuses = ["for", "if-loose", "and", "and-part-2"];
 
 trees.push({
   kind: NodeKind.Loose,
   id: "root",
   parent: {
     kind: NodeKind.TightLeaf,
-    id: "for i in 1...100",
+    id: "for",
     size: [200, 50],
   },
   children: [],
@@ -18,7 +19,7 @@ trees.push({
   id: "root",
   parent: {
     kind: NodeKind.TightLeaf,
-    id: "for i in 1...100",
+    id: "for",
     size: [150, 50],
   },
   children: [
@@ -40,7 +41,7 @@ trees.push({
   id: "root",
   parent: {
     kind: NodeKind.TightLeaf,
-    id: "for i in 1...100",
+    id: "for",
     size: [150, 50],
   },
   children: [
@@ -105,7 +106,7 @@ trees.push({
   id: "root",
   parent: {
     kind: NodeKind.TightLeaf,
-    id: "for i in 1...100",
+    id: "for",
     size: [150, 50],
   },
   children: [
@@ -165,7 +166,7 @@ trees.push({
   id: "root",
   parent: {
     kind: NodeKind.TightLeaf,
-    id: "for i in 1...100",
+    id: "for",
     size: [150, 50],
   },
   children: [

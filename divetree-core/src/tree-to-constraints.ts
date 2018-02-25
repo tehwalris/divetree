@@ -244,16 +244,6 @@ function convertTightSplit(node: TightSplitNode, config: Config): Output {
         b.intervals[shiftAxis].start,
       ),
     );
-    if (false) {
-      // children have same size in shiftAxis
-      constraints.push(
-        new kiwi.Constraint(
-          a.intervals[shiftAxis].getWidthExpr(),
-          kiwi.Operator.Eq,
-          b.intervals[shiftAxis].getWidthExpr(),
-        ),
-      );
-    }
   }
 
   // children fill bounding rect
