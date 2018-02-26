@@ -5,11 +5,25 @@ import {
 } from "./interfaces/output";
 import { AnimationGroup, AnimationKind } from "./plan-animation";
 
+export interface DrawRectScaling {
+  precomputed: {
+    size: number[];
+    offset: number[];
+  };
+  info: {
+    scale: number;
+    origin: number[];
+  };
+}
+
 export interface DrawRect {
   id: Id;
   lifecycle: number; // -1 before enter, 0 normal, 1 after leave (continuous)
-  size: number[];
-  offset: number[];
+  withoutScaling: {
+    size: number[];
+    offset: number[];
+  };
+  withScaling?: DrawRectScaling;
 }
 
 export type Interpolator = (t: number) => DrawRect[];
@@ -27,8 +41,10 @@ export function makeInterpolator(
         return {
           id,
           lifecycle: 0,
-          size: mixVector(b.size, a.size, t),
-          offset: mixVector(b.offset, a.offset, t),
+          withoutScaling: {
+            size: mixVector(b.size, a.size, t),
+            offset: mixVector(b.offset, a.offset, t),
+          },
         };
       });
   }
@@ -52,8 +68,20 @@ export function makeInterpolator(
       return {
         id,
         lifecycle,
-        size: mixVector([0, 0], e.size, finalMix),
-        offset: mixVector(origin, e.offset, finalMix),
+        withoutScaling: {
+          size: e.size,
+          offset: e.offset,
+        },
+        withScaling: {
+          precomputed: {
+            size: mixVector([0, 0], e.size, finalMix),
+            offset: mixVector(origin, e.offset, finalMix),
+          },
+          info: {
+            scale: finalMix,
+            origin: origin,
+          },
+        },
       };
     });
   };
