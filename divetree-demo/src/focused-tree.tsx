@@ -12,6 +12,8 @@ import {
   Id,
 } from "divetree-core";
 import { Rects } from "./rects";
+import { Focus } from "./interfaces";
+import * as R from "ramda";
 
 interface Props {
   expansionSpring?: Spring;
@@ -49,6 +51,9 @@ export class FocusedTree extends React.Component<Props> {
     offset: number[];
     offsetVelocity: number[];
     focusTarget: number[];
+    focusId: Id | undefined;
+    lastFocusTarget: number[];
+    lastFocusId: Id | undefined;
     isFirstAnimate: boolean;
     didUnmount: boolean;
     lastT: number;
@@ -57,6 +62,9 @@ export class FocusedTree extends React.Component<Props> {
     offset: [0, 0],
     offsetVelocity: [0, 0],
     focusTarget: [0, 0],
+    focusId: undefined,
+    lastFocusTarget: [0, 0],
+    lastFocusId: undefined,
     isFirstAnimate: true,
     didUnmount: false,
     lastT: 0,
@@ -125,7 +133,12 @@ export class FocusedTree extends React.Component<Props> {
     if (targetRect) {
       const { size } = targetRect;
       const center = targetRect.offset.map((e, i) => size[i] / 2 + e);
-      this.setState({ focusTarget: center });
+      this.setState({
+        focusTarget: center,
+        focusId: focusedId,
+        lastFocusTarget: this.state.focusTarget,
+        lastFocusId: this.state.focusId,
+      });
     }
   }
 
@@ -140,8 +153,41 @@ export class FocusedTree extends React.Component<Props> {
     return doLayoutAnimated(a, b, this.props.layoutConfig!);
   };
 
+  private getFocuses(): Focus[] {
+    const {
+      focusId,
+      lastFocusId,
+      offset,
+      focusTarget,
+      lastFocusTarget,
+    } = this.state;
+    const getDistance = R.compose(
+      Math.sqrt,
+      R.sum,
+      R.map((e: number) => e ** 2),
+      R.zipWith<number, number, number>(R.subtract),
+    );
+    const totalDistance = getDistance(focusTarget, lastFocusTarget);
+    const remainingDistance = getDistance(focusTarget, offset.map(R.negate));
+    if (totalDistance === 0) {
+      return [{ id: focusId, progress: 1 }];
+    }
+    return [
+      { id: focusId, progress: totalDistance - remainingDistance },
+      { id: lastFocusId, progress: remainingDistance },
+    ].map(e => ({ ...e, progress: e.progress / totalDistance }));
+  }
+
   render() {
     const { rects, offset } = this.state;
-    return <Rects offset={offset} rects={rects} width={500} height={500} />;
+    return (
+      <Rects
+        offset={offset}
+        rects={rects}
+        focuses={this.getFocuses()}
+        width={800}
+        height={600}
+      />
+    );
   }
 }

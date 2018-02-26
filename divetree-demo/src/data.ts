@@ -1,7 +1,7 @@
 import { NodeKind, Split, LooseNode } from "divetree-core";
 
 export const trees: LooseNode[] = [];
-export const focuses = ["for", "if-loose", "and", "and-part-2"];
+export const focuses = ["for", "if", "and", "and-part-2"];
 
 trees.push({
   kind: NodeKind.Loose,
