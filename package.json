@@ -1,10 +1,18 @@
 {
   "private": true,
   "workspaces": {
-    "packages": ["divetree-core", "divetree-demo"],
-    "nohoist": ["**/jest-runner", "**/jest-runner/**", "**/@types/**", "**/@types/*/**"]
+    "packages": [
+      "divetree-core",
+      "divetree-demo"
+    ],
+    "nohoist": [
+      "**/jest-runner",
+      "**/jest-runner/**",
+      "**/@types/**",
+      "**/@types/*/**"
+    ]
   },
   "devDependencies": {
-    "prettier": "^1.10.2"
+    "prettier": "^1.12.1"
   }
 }
