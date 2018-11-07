@@ -1454,6 +1454,16 @@ currently-unhandled@^0.4.1:
   dependencies:
     array-find-index "^1.0.1"
 
+d3-flextree@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/d3-flextree/-/d3-flextree-2.1.1.tgz#0e6b8b89b0602b073db2f488b5b8030ce318dde9"
+  dependencies:
+    d3-hierarchy "^1.1.5"
+
+d3-hierarchy@^1.1.5:
+  version "1.1.6"
+  resolved "https://registry.yarnpkg.com/d3-hierarchy/-/d3-hierarchy-1.1.6.tgz#842c1372090f870b7ea013ebae5c0c8d9f56229c"
+
 d@1:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/d/-/d-1.0.0.tgz#754bb5bfe55451da69a58b94d45f4c5b0462d58f"

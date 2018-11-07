@@ -35,18 +35,27 @@ export function makeInterpolator(
 ): Interpolator {
   if (animation.kind === AnimationKind.Transform) {
     return t =>
-      animation.content.map(id => {
-        const b = before.get(id)!;
-        const a = after.get(id)!;
-        return {
-          id,
-          lifecycle: 0,
-          withoutScaling: {
-            size: mixVector(b.size, a.size, t),
-            offset: mixVector(b.offset, a.offset, t),
-          },
-        };
-      });
+      animation.content
+        .map(id => {
+          const b = before.get(id);
+          const a = after.get(id);
+          if (!b || !a) {
+            // TODO this is only necessary while refactoring
+            // change to a throw later
+            console.warn("missing node", id);
+            return undefined;
+          }
+          return {
+            id,
+            lifecycle: 0,
+            withoutScaling: {
+              size: mixVector(b.size, a.size, t),
+              offset: mixVector(b.offset, a.offset, t),
+            },
+          };
+        })
+        .filter(v => v)
+        .map(v => v!);
   }
   const genericEnterLeave = (
     target: Map<Id, Node>,
@@ -62,28 +71,37 @@ export function makeInterpolator(
         getCenterLeft(after.get(animation.parent)!),
         t,
       );
-    return animation.content.map(id => {
-      const e = target.get(id)!;
-      const origin = _origin || getCenterLeft(e);
-      return {
-        id,
-        lifecycle,
-        withoutScaling: {
-          size: e.size,
-          offset: e.offset,
-        },
-        withScaling: {
-          precomputed: {
-            size: mixVector([0, 0], e.size, finalMix),
-            offset: mixVector(origin, e.offset, finalMix),
+    return animation.content
+      .map(id => {
+        const e = target.get(id);
+        if (!e) {
+          // TODO this is only necessary while refactoring
+          // change to a throw later
+          console.warn("missing node", id);
+          return undefined;
+        }
+        const origin = _origin || getCenterLeft(e);
+        return {
+          id,
+          lifecycle,
+          withoutScaling: {
+            size: e.size,
+            offset: e.offset,
           },
-          info: {
-            scale: finalMix,
-            origin: origin,
+          withScaling: {
+            precomputed: {
+              size: mixVector([0, 0], e.size, finalMix),
+              offset: mixVector(origin, e.offset, finalMix),
+            },
+            info: {
+              scale: finalMix,
+              origin: origin,
+            },
           },
-        },
-      };
-    });
+        };
+      })
+      .filter(v => v)
+      .map(v => v!);
   };
   return animation.kind === AnimationKind.Enter
     ? genericEnterLeave(after, t => t - 1, t => t)
