@@ -1,4 +1,4 @@
-import { Node, LooseNode, NodeKind } from "./interfaces/input";
+import { Node, LooseNode, NodeKind, TightNode } from "./interfaces/input";
 import { PublicOutputNode, InternalOutputNode } from "./interfaces/output";
 import { Config } from "./tree-to-constraints";
 import { Interpolator, makeInterpolator } from "./interpolate";
@@ -25,29 +25,18 @@ export function doLayoutAnimated(
   return t => R.chain(e => e(t), interpolators);
 }
 
-interface D3Node {
-  data: LooseNode;
-  children: D3Node[];
-}
-
-interface LayoutedD3Node extends D3Node {
+interface D3HierarchyNode {
   x: number;
   y: number;
-  children: LayoutedD3Node[];
-}
-
-function toD3Tree(node: Node): D3Node | undefined {
-  switch (node.kind) {
-    case NodeKind.Loose: {
-      return {
-        data: node,
-        children: node.children.map(toD3Tree).filter(e => e) as D3Node[],
-      };
-    }
-    default: {
-      return undefined;
-    }
-  }
+  size: number[];
+  extents: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+  };
+  data: Node;
+  children: D3HierarchyNode[] | null;
 }
 
 /*
@@ -60,36 +49,93 @@ TODO:
   - layout TightSplitNode a custom faster way
 */
 function _doLayout(root: Node): Map<Id, PublicOutputNode> {
+  const rotateBefore = R.reverse;
+  const rotateAfter = R.reverse;
+
   const layout = flextree({
-    nodeSize: () => [100, 30],
+    nodeSize: (e: D3HierarchyNode) => {
+      if (e.data.kind === NodeKind.TightLeaf) {
+        return rotateBefore(e.data.size);
+      }
+      if (
+        e.data.kind === NodeKind.Loose &&
+        e.data.parent.kind === NodeKind.TightLeaf
+      ) {
+        return rotateBefore(e.data.parent.size);
+      }
+
+      // console.error("unsupported node", e);
+      // throw new Error(`unsupported node ${e.data.kind}`);
+      return [50, 50];
+    },
+    children: (e: Node) => {
+      if (e.kind === NodeKind.Loose) {
+        return e.children;
+      }
+      return [];
+    },
   });
+
   const out = new Map<Id, PublicOutputNode>();
-  const visitDeep = (e: LayoutedD3Node) => {
-    out.set(e.data.id, {
-      id: e.data.id,
-      visible: true,
-      size: [100, 30], // TODO correct size
-      offset: [e.x, e.y], // TODO is this correct for the container node?
-    });
-    if (e.data.parent.kind === NodeKind.TightSplit) {
-      // TODO throw new Error("tight split not supported");
-      const id = e.data.id + "-tight-split-parent";
-      out.set(id, {
-        id,
+  const visitTightDeep = (
+    offset: number[],
+    e: TightNode,
+  ): never | undefined => {
+    if (e.kind === NodeKind.TightLeaf) {
+      out.set(e.id, {
+        id: e.id,
         visible: true,
-        size: [100, 30],
-        offset: [e.x, e.y],
+        size: e.size,
+        offset: offset,
       });
+    } else if (e.kind === NodeKind.TightSplit) {
+      // TODO adjust passed down offset
+      e.children.forEach(c => visitTightDeep(offset, c));
     } else {
-      out.set(e.data.parent.id, {
-        id: e.data.parent.id,
-        visible: true,
-        size: e.data.parent.size,
-        offset: [e.x, e.y],
-      });
+      return e;
     }
-    e.children.forEach(visitDeep);
   };
-  visitDeep(layout(toD3Tree(root)));
+  const visitDeep = (e: D3HierarchyNode): never | undefined => {
+    if (e.data.kind === NodeKind.TightLeaf) {
+      out.set(e.data.id, {
+        id: e.data.id,
+        visible: true,
+        size: rotateAfter(e.size),
+        offset: rotateAfter([e.x, e.y]),
+      });
+    } else if (e.data.kind === NodeKind.Loose) {
+      out.set(e.data.id, {
+        id: e.data.id,
+        visible: false,
+        size: rotateAfter([
+          e.extents.right - e.extents.left,
+          e.extents.bottom - e.extents.top,
+        ]), // TODO this might not be correct
+        offset: rotateAfter([e.x, e.y]), // TODO is this the correct offset for the container?
+      });
+      if (e.data.parent.kind === NodeKind.TightLeaf) {
+        out.set(e.data.parent.id, {
+          id: e.data.parent.id,
+          visible: true,
+          size: rotateAfter(e.size),
+          offset: rotateAfter([e.x, e.y]),
+        });
+      } else {
+        visitTightDeep(rotateAfter([e.x, e.y]), e.data.parent);
+        return;
+      }
+    } else if (e.data.kind === NodeKind.TightSplit) {
+      visitTightDeep(rotateAfter([e.x, e.y]), e.data);
+      return;
+    } else {
+      console.error("unreachable", e);
+      return e.data;
+    }
+    if (e.children) {
+      e.children.forEach(visitDeep);
+    }
+  };
+
+  visitDeep(layout(layout.hierarchy(root)));
   return out;
 }
