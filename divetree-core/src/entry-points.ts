@@ -1,11 +1,16 @@
-import { Node, LooseNode, NodeKind, TightNode } from "./interfaces/input";
-import { PublicOutputNode, InternalOutputNode } from "./interfaces/output";
-import { Config } from "./tree-to-constraints";
+import { Node, NodeKind, TightNode, TightSplitNode } from "./interfaces/input";
+import {
+  PublicOutputNode,
+  InternalOutputNode,
+  isPublicOutputNode,
+} from "./interfaces/output";
+import { Config, convertAny, Output } from "./tree-to-constraints";
 import { Interpolator, makeInterpolator } from "./interpolate";
 import { Id } from "./interfaces/input";
 import { planAnimation } from "./plan-animation";
 import * as R from "ramda";
 import { flextree } from "d3-flextree";
+import * as kiwi from "kiwi.js";
 
 export function doLayout(root: Node, config: Config): InternalOutputNode[] {
   return [..._doLayout(root).values()];
@@ -37,6 +42,19 @@ interface D3HierarchyNode {
   };
   data: Node;
   children: D3HierarchyNode[] | null;
+}
+
+function _doLayoutOld(root: Node, config: Config): PublicOutputNode[] {
+  const converted = convertAny(root, config);
+  const solver = new kiwi.Solver();
+  converted.constraints.forEach(e => solver.addConstraint(e));
+  [0, 0].forEach((v, i) => {
+    const variable = converted.boundingRect.intervals[i].start;
+    solver.addEditVariable(variable, kiwi.Strength.strong);
+    solver.suggestValue(variable, v);
+  });
+  solver.updateVariables();
+  return converted.rects.map(e => e.build()).filter(isPublicOutputNode);
 }
 
 /*
@@ -79,21 +97,20 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
   const out = new Map<Id, PublicOutputNode>();
   const visitTightDeep = (
     offset: number[],
-    e: TightNode,
-  ): never | undefined => {
-    if (e.kind === NodeKind.TightLeaf) {
-      out.set(e.id, {
-        id: e.id,
-        visible: true,
-        size: e.size,
-        offset: offset,
-      });
-    } else if (e.kind === NodeKind.TightSplit) {
-      // TODO adjust passed down offset
-      e.children.forEach(c => visitTightDeep(offset, c));
-    } else {
-      return e;
-    }
+    splitRoot: TightSplitNode,
+  ): void => {
+    const config = {
+      // TODO none of these options are relevant any more
+      loose: {
+        singleChildDistance: 0,
+        multiChildDistance: 0,
+        siblingDistance: 0,
+        verticalPadding: 0,
+      },
+    };
+    _doLayoutOld(splitRoot, config).forEach(e => {
+      out.set(e.id, { ...e, offset: e.offset.map((v, i) => v + offset[i]) });
+    });
   };
   const visitDeep = (e: D3HierarchyNode): never | undefined => {
     if (e.data.kind === NodeKind.TightLeaf) {
