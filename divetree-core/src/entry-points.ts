@@ -194,7 +194,6 @@ function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
     node.y = x;
   });
   const treeC = calculateExtents(treeB, undefined);
-  console.log(treeC);
 
   const out = new Map<Id, PublicOutputNode>();
   visitTree(treeC, workingNode => {

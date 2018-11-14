@@ -139,6 +139,13 @@ export class FocusedTree extends React.Component<Props> {
         lastFocusTarget: this.state.focusTarget,
         lastFocusId: this.state.focusId,
       });
+    } else {
+      this.setState({
+        focusTarget: this.state.focusTarget,
+        focusId: undefined,
+        lastFocusTarget: this.state.focusTarget,
+        lastFocusId: this.state.focusId,
+      });
     }
   }
 

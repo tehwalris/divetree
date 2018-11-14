@@ -1,6 +1,11 @@
 import * as React from "react";
 import NavTree, { NavNode } from "divetree-demo/src/nav-tree";
-import { Node as DivetreeNode, NodeKind } from "divetree-core";
+import {
+  Node as DivetreeNode,
+  NodeKind,
+  Split,
+  TightLeafNode,
+} from "divetree-core";
 import { unreachable } from "divetree-demo/src/util";
 
 type Expression = BinaryExpression | NumericLiteral;
@@ -46,8 +51,28 @@ const DEMO_EXPRESSION: Expression = {
   },
   right: {
     id: "cljwoej",
-    kind: ExpressionKind.NumericLiteral,
-    value: 22,
+    kind: ExpressionKind.BinaryExpression,
+    operation: Operation.Multiply,
+    left: {
+      id: "vvetar",
+      kind: ExpressionKind.BinaryExpression,
+      operation: Operation.Add,
+      left: {
+        id: "snqrcee",
+        kind: ExpressionKind.NumericLiteral,
+        value: 22,
+      },
+      right: {
+        id: "tttscjee",
+        kind: ExpressionKind.NumericLiteral,
+        value: 3,
+      },
+    },
+    right: {
+      id: "rjknsw",
+      kind: ExpressionKind.NumericLiteral,
+      value: 75,
+    },
   },
 };
 
@@ -66,7 +91,7 @@ export class EquationEditor extends React.Component<{}, State> {
   }
 
   getDisplayTree = (focusPath: string[]): DivetreeNode => {
-    return toDisplayTree(this.state.value, focusPath);
+    return toDisplayTree(this.state.value, focusPath, 0);
   };
 }
 
@@ -87,10 +112,55 @@ function toNavTree(node: Expression): NavNode {
   }
 }
 
-function toDisplayTree(node: Expression, path: string[]): DivetreeNode {
-  return {
+function toDisplayTree(
+  node: Expression,
+  path: string[],
+  extraDepth: number,
+): DivetreeNode {
+  let children: Expression[] = [];
+  if (node.kind === ExpressionKind.BinaryExpression) {
+    children = [node.left, node.right];
+  }
+
+  const isOnPath = node.id === path[0];
+  const isFinal = !isOnPath || !!extraDepth;
+
+  const base: TightLeafNode = {
     kind: NodeKind.TightLeaf,
     id: node.id,
-    size: [200, 50],
+    size: [100, 50],
+  };
+  if (isFinal) {
+    if (!children.length) {
+      return base;
+    }
+    return {
+      kind: NodeKind.TightSplit,
+      split: Split.SideBySide,
+      children: [
+        base,
+        {
+          kind: NodeKind.TightSplit,
+          split: Split.Stacked,
+          children: children.map((c): TightLeafNode => ({
+            kind: NodeKind.TightLeaf,
+            id: c.id,
+            size: [75, 25],
+          })),
+        },
+      ],
+    };
+  }
+  return {
+    kind: NodeKind.Loose,
+    id: `${node.id}-loose`,
+    parent: base,
+    children: children.map(c => {
+      return toDisplayTree(
+        c,
+        isOnPath ? path.slice(1) : [],
+        extraDepth + (isOnPath ? 0 : 1),
+      );
+    }),
   };
 }
