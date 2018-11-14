@@ -44,7 +44,7 @@ interface D3HierarchyNode {
   children: D3HierarchyNode[] | null;
 }
 
-function _doLayoutOld(root: Node, config: Config): PublicOutputNode[] {
+function _doLayoutOld(root: Node, config: Config): Output {
   const converted = convertAny(root, config);
   const solver = new kiwi.Solver();
   converted.constraints.forEach(e => solver.addConstraint(e));
@@ -54,7 +54,7 @@ function _doLayoutOld(root: Node, config: Config): PublicOutputNode[] {
     solver.suggestValue(variable, v);
   });
   solver.updateVariables();
-  return converted.rects.map(e => e.build()).filter(isPublicOutputNode);
+  return converted;
 }
 
 /*
@@ -71,20 +71,35 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
   const rotateAfter = R.reverse;
 
   const layout = flextree({
-    nodeSize: (e: D3HierarchyNode) => {
+    nodeSize: (e: D3HierarchyNode): never | number[] => {
+      const getSplitSize = (s: TightSplitNode) => {
+        const config = {
+          // TODO none of these options are relevant any more
+          loose: {
+            singleChildDistance: 0,
+            multiChildDistance: 0,
+            siblingDistance: 0,
+            verticalPadding: 0,
+          },
+        };
+        return _doLayoutOld(s, config).boundingRect.build().size;
+      };
+
       if (e.data.kind === NodeKind.TightLeaf) {
         return rotateBefore(e.data.size);
+      } else if (e.data.kind === NodeKind.Loose) {
+        if (e.data.parent.kind === NodeKind.TightLeaf) {
+          return rotateBefore(e.data.parent.size);
+        } else if (e.data.parent.kind === NodeKind.TightSplit) {
+          return rotateBefore(getSplitSize(e.data.parent));
+        } else {
+          return e.data.parent;
+        }
+      } else if (e.data.kind === NodeKind.TightSplit) {
+        return rotateBefore(getSplitSize(e.data));
+      } else {
+        return e.data;
       }
-      if (
-        e.data.kind === NodeKind.Loose &&
-        e.data.parent.kind === NodeKind.TightLeaf
-      ) {
-        return rotateBefore(e.data.parent.size);
-      }
-
-      // console.error("unsupported node", e);
-      // throw new Error(`unsupported node ${e.data.kind}`);
-      return [50, 50];
     },
     children: (e: Node) => {
       if (e.kind === NodeKind.Loose) {
@@ -108,9 +123,12 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
         verticalPadding: 0,
       },
     };
-    _doLayoutOld(splitRoot, config).forEach(e => {
-      out.set(e.id, { ...e, offset: e.offset.map((v, i) => v + offset[i]) });
-    });
+    _doLayoutOld(splitRoot, config)
+      .rects.map(e => e.build())
+      .filter(isPublicOutputNode)
+      .forEach(e => {
+        out.set(e.id, { ...e, offset: e.offset.map((v, i) => v + offset[i]) });
+      });
   };
   const visitDeep = (e: D3HierarchyNode): never | undefined => {
     if (e.data.kind === NodeKind.TightLeaf) {
@@ -125,9 +143,10 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
         id: e.data.id,
         visible: false,
         size: rotateAfter([
+          // TODO `extents` is an expensive getter
           e.extents.right - e.extents.left,
           e.extents.bottom - e.extents.top,
-        ]), // TODO this might not be correct
+        ]),
         offset: rotateAfter([e.x, e.y]), // TODO is this the correct offset for the container?
       });
       if (e.data.parent.kind === NodeKind.TightLeaf) {
