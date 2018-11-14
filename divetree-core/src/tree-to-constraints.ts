@@ -60,6 +60,8 @@ export interface Output {
 }
 
 export interface Config {
+  // TODO some of these might not be used any more
+
   loose: {
     // distances from parent to children
     singleChildDistance: number; // if only one child

@@ -1,4 +1,10 @@
-import { Node, NodeKind, TightNode, TightSplitNode } from "./interfaces/input";
+import {
+  Node,
+  NodeKind,
+  TightNode,
+  TightSplitNode,
+  LooseNode,
+} from "./interfaces/input";
 import {
   PublicOutputNode,
   InternalOutputNode,
@@ -13,7 +19,7 @@ import { flextree } from "d3-flextree";
 import * as kiwi from "kiwi.js";
 
 export function doLayout(root: Node, config: Config): InternalOutputNode[] {
-  return [..._doLayout(root).values()];
+  return [..._doLayout(root, config).values()];
 }
 
 export function doLayoutAnimated(
@@ -21,8 +27,8 @@ export function doLayoutAnimated(
   after: Node,
   config: Config,
 ): Interpolator {
-  const beforeRects = _doLayout(before);
-  const afterRects = _doLayout(after);
+  const beforeRects = _doLayout(before, config);
+  const afterRects = _doLayout(after, config);
   const animationGroups = planAnimation(before, after);
   const interpolators = animationGroups.map(e =>
     makeInterpolator(beforeRects, afterRects, e),
@@ -42,6 +48,7 @@ interface D3HierarchyNode {
   };
   data: Node;
   children: D3HierarchyNode[] | null;
+  parent: D3HierarchyNode | null;
 }
 
 function _doLayoutOld(root: Node, config: Config): Output {
@@ -57,31 +64,23 @@ function _doLayoutOld(root: Node, config: Config): Output {
   return converted;
 }
 
-/*
-TODO:
-  - layout TightSplitNode the old way 
-  - convert full tree to "traditional"
-    - d3-hirarchy format
-    - no node kinds
-    - layouted TightSplits
-  - layout TightSplitNode a custom faster way
-*/
-function _doLayout(root: Node): Map<Id, PublicOutputNode> {
+function _doLayout(root: Node, config: Config): Map<Id, PublicOutputNode> {
   const rotateBefore = R.reverse;
   const rotateAfter = R.reverse;
+
+  function getChildPadding(node: LooseNode) {
+    if (node.children.length === 0) {
+      return 0;
+    }
+    if (node.children.length === 1) {
+      return config.loose.singleChildDistance;
+    }
+    return config.loose.multiChildDistance;
+  }
 
   const layout = flextree({
     nodeSize: (e: D3HierarchyNode): never | number[] => {
       const getSplitSize = (s: TightSplitNode) => {
-        const config = {
-          // TODO none of these options are relevant any more
-          loose: {
-            singleChildDistance: 0,
-            multiChildDistance: 0,
-            siblingDistance: 0,
-            verticalPadding: 0,
-          },
-        };
         return _doLayoutOld(s, config).boundingRect.build().size;
       };
 
@@ -89,9 +88,13 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
         return rotateBefore(e.data.size);
       } else if (e.data.kind === NodeKind.Loose) {
         if (e.data.parent.kind === NodeKind.TightLeaf) {
-          return rotateBefore(e.data.parent.size);
+          const size = [...e.data.parent.size];
+          size[0] += getChildPadding(e.data);
+          return rotateBefore(size);
         } else if (e.data.parent.kind === NodeKind.TightSplit) {
-          return rotateBefore(getSplitSize(e.data.parent));
+          const size = getSplitSize(e.data.parent);
+          size[0] += getChildPadding(e.data);
+          return rotateBefore(size);
         } else {
           return e.data.parent;
         }
@@ -107,6 +110,12 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
       }
       return [];
     },
+    spacing: (a: D3HierarchyNode, b: D3HierarchyNode): number => {
+      if (a.parent === b.parent) {
+        return config.loose.siblingDistance;
+      }
+      return config.loose.verticalPadding;
+    },
   });
 
   const out = new Map<Id, PublicOutputNode>();
@@ -114,15 +123,6 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
     offset: number[],
     splitRoot: TightSplitNode,
   ): void => {
-    const config = {
-      // TODO none of these options are relevant any more
-      loose: {
-        singleChildDistance: 0,
-        multiChildDistance: 0,
-        siblingDistance: 0,
-        verticalPadding: 0,
-      },
-    };
     _doLayoutOld(splitRoot, config)
       .rects.map(e => e.build())
       .filter(isPublicOutputNode)
@@ -153,7 +153,7 @@ function _doLayout(root: Node): Map<Id, PublicOutputNode> {
         out.set(e.data.parent.id, {
           id: e.data.parent.id,
           visible: true,
-          size: rotateAfter(e.size),
+          size: e.data.parent.size,
           offset: rotateAfter([e.x, e.y]),
         });
       } else {
