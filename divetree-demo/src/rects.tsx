@@ -19,7 +19,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   rect: {
     position: "absolute",
     border: "1px solid black",
-    // boxSizing: "border-box",
     overflow: "hidden",
   },
 };
@@ -47,9 +46,9 @@ export const Rects = ({ offset, rects, focuses, width, height }: Props) => {
       {rects.map(e => {
         const focus = focuses.find(f => f.id === e.id);
         let transform = `translate(
-        ${toX(e.withoutScaling.offset[0])}px,
-        ${toY(e.withoutScaling.offset[1])}px
-      )`;
+          ${toX(e.withoutScaling.offset[0])}px,
+          ${toY(e.withoutScaling.offset[1])}px
+        )`;
         if (e.withScaling && e.withScaling.info.scale !== 1) {
           transform = `scale(${e.withScaling.info.scale}) ${transform}`;
         }

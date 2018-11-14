@@ -4,7 +4,7 @@ import {
   createSpring,
   DrawRect,
   AnimationQueue,
-  LooseNode,
+  Node as DivetreeNode,
   Interpolator,
   LayoutConfig,
   doLayout,
@@ -19,7 +19,7 @@ interface Props {
   expansionSpring?: Spring;
   focusSpring?: Spring;
   layoutConfig?: LayoutConfig;
-  tree: LooseNode;
+  tree: DivetreeNode;
   focusedId: Id | undefined;
 }
 
@@ -70,7 +70,7 @@ export class FocusedTree extends React.Component<Props> {
     lastT: 0,
   };
 
-  private queue: AnimationQueue<LooseNode, Interpolator>;
+  private queue: AnimationQueue<DivetreeNode, Interpolator>;
 
   componentWillMount() {
     this.queue = new AnimationQueue(
@@ -147,8 +147,8 @@ export class FocusedTree extends React.Component<Props> {
   };
 
   private indirectDoLayoutAnimated = (
-    a: LooseNode,
-    b: LooseNode,
+    a: DivetreeNode,
+    b: DivetreeNode,
   ): Interpolator => {
     return doLayoutAnimated(a, b, this.props.layoutConfig!);
   };
