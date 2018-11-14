@@ -1,10 +1,4 @@
-import {
-  Node,
-  NodeKind,
-  TightNode,
-  TightSplitNode,
-  LooseNode,
-} from "./interfaces/input";
+import { Node, NodeKind } from "./interfaces/input";
 import {
   PublicOutputNode,
   InternalOutputNode,
@@ -17,9 +11,16 @@ import { planAnimation } from "./plan-animation";
 import * as R from "ramda";
 import { flextree } from "d3-flextree";
 import * as kiwi from "kiwi.js";
+import {
+  TreeNode,
+  WorkingNodeA,
+  WorkingNodeB,
+  WorkingNodeC,
+  Extents,
+} from "./interfaces/working";
 
 export function doLayout(root: Node, config: Config): InternalOutputNode[] {
-  return [..._doLayout(root, config).values()];
+  return [..._doLayoutNew(root, config).values()];
 }
 
 export function doLayoutAnimated(
@@ -27,28 +28,13 @@ export function doLayoutAnimated(
   after: Node,
   config: Config,
 ): Interpolator {
-  const beforeRects = _doLayout(before, config);
-  const afterRects = _doLayout(after, config);
+  const beforeRects = _doLayoutNew(before, config);
+  const afterRects = _doLayoutNew(after, config);
   const animationGroups = planAnimation(before, after);
   const interpolators = animationGroups.map(e =>
     makeInterpolator(beforeRects, afterRects, e),
   );
   return t => R.chain(e => e(t), interpolators);
-}
-
-interface D3HierarchyNode {
-  x: number;
-  y: number;
-  size: number[];
-  extents: {
-    top: number;
-    right: number;
-    bottom: number;
-    left: number;
-  };
-  data: Node;
-  children: D3HierarchyNode[] | null;
-  parent: D3HierarchyNode | null;
 }
 
 function _doLayoutOld(root: Node, config: Config): Output {
@@ -64,53 +50,129 @@ function _doLayoutOld(root: Node, config: Config): Output {
   return converted;
 }
 
-function _doLayout(root: Node, config: Config): Map<Id, PublicOutputNode> {
-  const rotateBefore = R.reverse;
-  const rotateAfter = R.reverse;
-
-  function getChildPadding(node: LooseNode) {
-    if (node.children.length === 0) {
-      return 0;
-    }
-    if (node.children.length === 1) {
-      return config.loose.singleChildDistance;
-    }
-    return config.loose.multiChildDistance;
-  }
-
-  const layout = flextree({
-    nodeSize: (e: D3HierarchyNode): never | number[] => {
-      const getSplitSize = (s: TightSplitNode) => {
-        return _doLayoutOld(s, config).boundingRect.build().size;
+function toWorkingTree(
+  config: Config,
+  node: Node,
+  parent: TreeNode<WorkingNodeA> | undefined,
+): TreeNode<WorkingNodeA> {
+  switch (node.kind) {
+    case NodeKind.TightLeaf:
+      return {
+        size: node.size,
+        paddingRight: 0,
+        data: node,
+        getOutput: v => [
+          {
+            id: node.id,
+            visible: true,
+            size: v.size,
+            offset: [v.x, v.y],
+          },
+        ],
+        children: [],
+        parent,
       };
+    case NodeKind.TightSplit:
+      const oldLayout = _doLayoutOld(node, config);
+      const { size } = oldLayout.boundingRect.build();
+      return {
+        size,
+        paddingRight: 0,
+        data: node,
+        getOutput: v =>
+          oldLayout.rects
+            .map(e => e.build())
+            .filter(isPublicOutputNode)
+            .map(e => ({
+              ...e,
+              offset: [e.offset[0] + v.x, e.offset[1] + v.y],
+            })),
+        children: [],
+        parent,
+      };
+    case NodeKind.Loose:
+      let paddingRight = 0;
+      if (node.children.length === 1) {
+        paddingRight = config.loose.singleChildDistance;
+      } else if (node.children.length > 1) {
+        paddingRight = config.loose.multiChildDistance;
+      }
+      const base = toWorkingTree(config, node.parent, parent);
+      const self: TreeNode<WorkingNodeA> = {
+        ...base,
+        paddingRight,
+        getOutput: v => [
+          ...base.getOutput(v),
+          {
+            id: node.id,
+            visible: true,
+            size: v.outerSize,
+            offset: [v.x, v.y],
+          },
+        ],
+      };
+      if (self.children.length) {
+        throw new Error("unexpected children created by LooseNode.parent");
+      }
+      self.children = node.children.map(c => toWorkingTree(config, c, self));
+      return self;
+    default:
+      return unreachable(node);
+  }
+}
 
-      if (e.data.kind === NodeKind.TightLeaf) {
-        return rotateBefore(e.data.size);
-      } else if (e.data.kind === NodeKind.Loose) {
-        if (e.data.parent.kind === NodeKind.TightLeaf) {
-          const size = [...e.data.parent.size];
-          size[0] += getChildPadding(e.data);
-          return rotateBefore(size);
-        } else if (e.data.parent.kind === NodeKind.TightSplit) {
-          const size = getSplitSize(e.data.parent);
-          size[0] += getChildPadding(e.data);
-          return rotateBefore(size);
-        } else {
-          return e.data.parent;
-        }
-      } else if (e.data.kind === NodeKind.TightSplit) {
-        return rotateBefore(getSplitSize(e.data));
-      } else {
-        return e.data;
-      }
-    },
-    children: (e: Node) => {
-      if (e.kind === NodeKind.Loose) {
-        return e.children;
-      }
-      return [];
-    },
-    spacing: (a: D3HierarchyNode, b: D3HierarchyNode): number => {
+function outerExtents(set: Extents[]): Extents {
+  return set.reduce(
+    (a, c) => ({
+      top: Math.min(a.top, c.top),
+      right: Math.max(a.right, c.right),
+      bottom: Math.max(a.bottom, c.bottom),
+      left: Math.min(a.left, c.left),
+    }),
+    set[0],
+  );
+}
+
+function calculateExtents(
+  node: TreeNode<WorkingNodeB>,
+  parent: TreeNode<WorkingNodeC> | undefined,
+): TreeNode<WorkingNodeC> {
+  const selfExtents = {
+    left: node.x,
+    right: node.x + node.size[0],
+    top: node.y,
+    bottom: node.y + node.size[1],
+  };
+  const self: TreeNode<WorkingNodeC> = {
+    ...node,
+    parent,
+
+    // All of the following are placeholders which are set later
+    children: [],
+    extents: undefined as any,
+    outerSize: [],
+  };
+  self.children = node.children.map(c => calculateExtents(c, self));
+  self.extents = outerExtents([
+    selfExtents,
+    ...self.children.map(v => v.extents),
+  ]);
+  self.outerSize = [
+    self.extents.right - self.extents.left,
+    self.extents.bottom - self.extents.top,
+  ];
+  return self;
+}
+
+function visitTree<T>(node: TreeNode<T>, cb: (node: T) => void): void {
+  cb(node);
+  node.children.forEach(c => visitTree(c, cb));
+}
+
+function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
+  const layout = flextree({
+    nodeSize: (node: TreeNode<WorkingNodeA>): number[] => node.size,
+    spacing: (a: TreeNode<WorkingNodeA>, b: TreeNode<WorkingNodeA>): number => {
       if (a.parent === b.parent) {
         return config.loose.siblingDistance;
       }
@@ -118,60 +180,32 @@ function _doLayout(root: Node, config: Config): Map<Id, PublicOutputNode> {
     },
   });
 
-  const out = new Map<Id, PublicOutputNode>();
-  const visitTightDeep = (
-    offset: number[],
-    splitRoot: TightSplitNode,
-  ): void => {
-    _doLayoutOld(splitRoot, config)
-      .rects.map(e => e.build())
-      .filter(isPublicOutputNode)
-      .forEach(e => {
-        out.set(e.id, { ...e, offset: e.offset.map((v, i) => v + offset[i]) });
-      });
-  };
-  const visitDeep = (e: D3HierarchyNode): never | undefined => {
-    if (e.data.kind === NodeKind.TightLeaf) {
-      out.set(e.data.id, {
-        id: e.data.id,
-        visible: true,
-        size: rotateAfter(e.size),
-        offset: rotateAfter([e.x, e.y]),
-      });
-    } else if (e.data.kind === NodeKind.Loose) {
-      out.set(e.data.id, {
-        id: e.data.id,
-        visible: false,
-        size: rotateAfter([
-          // TODO `extents` is an expensive getter
-          e.extents.right - e.extents.left,
-          e.extents.bottom - e.extents.top,
-        ]),
-        offset: rotateAfter([e.x, e.y]), // TODO is this the correct offset for the container?
-      });
-      if (e.data.parent.kind === NodeKind.TightLeaf) {
-        out.set(e.data.parent.id, {
-          id: e.data.parent.id,
-          visible: true,
-          size: e.data.parent.size,
-          offset: rotateAfter([e.x, e.y]),
-        });
-      } else {
-        visitTightDeep(rotateAfter([e.x, e.y]), e.data.parent);
-        return;
-      }
-    } else if (e.data.kind === NodeKind.TightSplit) {
-      visitTightDeep(rotateAfter([e.x, e.y]), e.data);
-      return;
-    } else {
-      console.error("unreachable", e);
-      return e.data;
-    }
-    if (e.children) {
-      e.children.forEach(visitDeep);
-    }
-  };
+  const treeA = toWorkingTree(config, root, undefined);
+  visitTree(treeA, node => {
+    node.size = R.reverse(node.size);
+    node.size[1] += node.paddingRight;
+  });
+  const treeB: TreeNode<WorkingNodeB> = layout(treeA);
+  visitTree(treeB, node => {
+    node.size = R.reverse(node.size);
+    node.size[0] -= node.paddingRight;
+    const { x, y } = node;
+    node.x = y;
+    node.y = x;
+  });
+  const treeC = calculateExtents(treeB, undefined);
+  console.log(treeC);
 
-  visitDeep(layout(layout.hierarchy(root)));
+  const out = new Map<Id, PublicOutputNode>();
+  visitTree(treeC, workingNode => {
+    workingNode.getOutput(workingNode).forEach(outputNode => {
+      out.set(outputNode.id, outputNode);
+    });
+  });
   return out;
+}
+
+function unreachable(v: never): never {
+  console.error("unreachable", v);
+  throw new Error("unreachable");
 }
