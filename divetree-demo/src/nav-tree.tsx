@@ -13,6 +13,7 @@ interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
   getContent: GetContent;
+  onKeyDown: (key: string, focusedId: string) => void;
 }
 
 interface State {
@@ -24,7 +25,10 @@ export default class NavTree extends React.Component<Props, State> {
 
   componentWillMount() {
     document.addEventListener("keydown", this.onKeyDown);
-    this.setState({});
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("keydown", this.onKeyDown);
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
@@ -61,8 +65,12 @@ export default class NavTree extends React.Component<Props, State> {
         }
         break;
       }
-      default:
-        break;
+      default: {
+        const currentNavNode = atPath(focusPath, this.props.navTree);
+        if (currentNavNode) {
+          this.props.onKeyDown(e.key, currentNavNode.id);
+        }
+      }
     }
   };
 

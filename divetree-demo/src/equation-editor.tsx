@@ -9,11 +9,12 @@ import {
 } from "divetree-core";
 import { unreachable } from "divetree-demo/src/util";
 
-type Expression = BinaryExpression | NumericLiteral;
+type Expression = BinaryExpression | NumericLiteral | Hole;
 
 enum ExpressionKind {
   BinaryExpression,
   NumericLiteral,
+  Hole,
 }
 
 enum Operation {
@@ -37,8 +38,12 @@ interface NumericLiteral extends BaseExpression {
   value: number;
 }
 
+interface Hole extends BaseExpression {
+  kind: ExpressionKind.Hole;
+}
+
 interface State {
-  value: Expression;
+  expression: Expression;
   index: Map<Id, Expression>;
 }
 
@@ -61,8 +66,7 @@ const DEMO_EXPRESSION: Expression = {
       operation: Operation.Add,
       left: {
         id: "snqrcee",
-        kind: ExpressionKind.NumericLiteral,
-        value: 22,
+        kind: ExpressionKind.Hole,
       },
       right: {
         id: "tttscjee",
@@ -80,22 +84,23 @@ const DEMO_EXPRESSION: Expression = {
 
 export class EquationEditor extends React.Component<{}, State> {
   state: State = {
-    value: DEMO_EXPRESSION,
+    expression: DEMO_EXPRESSION,
     index: buildIndex(DEMO_EXPRESSION),
   };
 
   render() {
     return (
       <NavTree
-        navTree={toNavTree(this.state.value)}
+        navTree={toNavTree(this.state.expression)}
         getDisplayTree={this.getDisplayTree}
         getContent={this.getContent}
+        onKeyDown={this.onKeyDown}
       />
     );
   }
 
   getDisplayTree = (focusPath: string[]): DivetreeNode => {
-    return toDisplayTree(this.state.value, focusPath, 0);
+    return toDisplayTree(this.state.expression, focusPath, 0);
   };
 
   getContent = (id: Id): React.ReactElement<unknown> | null => {
@@ -108,10 +113,58 @@ export class EquationEditor extends React.Component<{}, State> {
         return <div>{Operation[node.operation]}</div>;
       case ExpressionKind.NumericLiteral:
         return <div>{node.value}</div>;
+      case ExpressionKind.Hole:
+        return <div>(hole)</div>;
       default:
         return unreachable(node);
     }
   };
+
+  onKeyDown = (key: string, focusedId: string) => {
+    const setWrapped = (wrap: (node: Expression) => Expression) =>
+      this.setExpression(wrapAt(this.state.expression, focusedId, wrap));
+    switch (key) {
+      case "a": {
+        // TODO Adding a node breaks `focusPath` in `NavTree`
+        setWrapped(node => ({
+          id: "" + Math.random(),
+          kind: ExpressionKind.BinaryExpression,
+          operation: Operation.Add,
+          left: node,
+          right: {
+            id: "" + Math.random(),
+            kind: ExpressionKind.Hole,
+          },
+        }));
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  };
+
+  setExpression(expression: Expression) {
+    this.setState({ expression, index: buildIndex(expression) });
+  }
+}
+
+function wrapAt(
+  node: Expression,
+  targetId: Id,
+  wrap: (node: Expression) => Expression,
+): Expression {
+  if (node.id === targetId) {
+    return wrap(node);
+  }
+  if (node.kind === ExpressionKind.BinaryExpression) {
+    return {
+      ...node,
+      left: wrapAt(node.left, targetId, wrap),
+      right: wrapAt(node.right, targetId, wrap),
+    };
+  }
+  return node;
 }
 
 function buildIndex(
@@ -123,11 +176,9 @@ function buildIndex(
       _index.set(node.id, node);
       [node.left, node.right].forEach(c => buildIndex(c, _index));
       break;
-    case ExpressionKind.NumericLiteral:
+    default:
       _index.set(node.id, node);
       break;
-    default:
-      return unreachable(node);
   }
   return _index;
 }
@@ -139,13 +190,11 @@ function toNavTree(node: Expression): NavNode {
         id: node.id,
         children: [node.left, node.right].map(toNavTree),
       };
-    case ExpressionKind.NumericLiteral:
+    default:
       return {
         id: node.id,
         children: [],
       };
-    default:
-      return unreachable(node);
   }
 }
 
