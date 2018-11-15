@@ -2,6 +2,7 @@ import * as React from "react";
 import { Node as DivetreeNode } from "divetree-core";
 import { FocusedTree } from "divetree-demo/src/focused-tree";
 import * as R from "ramda";
+import { GetContent } from "divetree-demo/src/rects";
 
 export interface NavNode {
   id: string;
@@ -11,6 +12,7 @@ export interface NavNode {
 interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
+  getContent: GetContent;
 }
 
 interface State {
@@ -65,8 +67,8 @@ export default class NavTree extends React.Component<Props, State> {
   };
 
   render() {
+    const { getDisplayTree, navTree, getContent } = this.props;
     const { focusPath } = this.state;
-    const { getDisplayTree, navTree } = this.props;
     const focusedId = focusPath.length
       ? focusPath[focusPath.length - 1]
       : navTree.id;
@@ -74,6 +76,7 @@ export default class NavTree extends React.Component<Props, State> {
       <FocusedTree
         tree={getDisplayTree([navTree.id, ...focusPath])}
         focusedId={focusedId}
+        getContent={getContent}
       />
     );
   }

@@ -41,6 +41,7 @@ export default class HardcodedTree extends React.Component<{}, State> {
       <FocusedTree
         tree={this.state.tree}
         focusedId={focuses[this.state.treeIndex]}
+        getContent={() => null}
       />
     );
   }

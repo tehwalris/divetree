@@ -1,6 +1,8 @@
 import * as React from "react";
-import { DrawRect } from "divetree-core";
+import { DrawRect, Id } from "divetree-core";
 import { Focus } from "./interfaces";
+
+export type GetContent = (id: Id) => React.ReactElement<unknown> | null;
 
 interface Props {
   offset: number[];
@@ -8,6 +10,7 @@ interface Props {
   focuses: Focus[];
   width: number;
   height: number;
+  getContent: GetContent;
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
@@ -35,7 +38,14 @@ function getFocusColor(progress: number): string {
 const DPR = window.devicePixelRatio;
 const DPRI = 1 / DPR;
 
-export const Rects = ({ offset, rects, focuses, width, height }: Props) => {
+export const Rects = ({
+  offset,
+  rects,
+  focuses,
+  width,
+  height,
+  getContent,
+}: Props) => {
   // Round to actual display pixels
   const roundPixel = (v: number) => Math.round(v * DPR) * DPRI;
   const toX = (v: number) => roundPixel(v + offset[0] + width / 2);
@@ -70,7 +80,9 @@ export const Rects = ({ offset, rects, focuses, width, height }: Props) => {
               zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
               background: getFocusColor(focus ? Math.abs(focus.progress) : 0),
             }}
-          />
+          >
+            {getContent(e.id)}
+          </div>
         );
       })}
     </div>

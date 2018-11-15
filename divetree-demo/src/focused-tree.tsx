@@ -11,7 +11,7 @@ import {
   doLayoutAnimated,
   Id,
 } from "divetree-core";
-import { Rects } from "./rects";
+import { Rects, GetContent } from "./rects";
 import { Focus } from "./interfaces";
 import * as R from "ramda";
 
@@ -21,6 +21,20 @@ interface Props {
   layoutConfig?: LayoutConfig;
   tree: DivetreeNode;
   focusedId: Id | undefined;
+  getContent: GetContent;
+}
+
+interface State {
+  rects: DrawRect[];
+  offset: number[];
+  offsetVelocity: number[];
+  focusTarget: number[];
+  focusId: Id | undefined;
+  lastFocusTarget: number[];
+  lastFocusId: Id | undefined;
+  isFirstAnimate: boolean;
+  didUnmount: boolean;
+  lastT: number;
 }
 
 const DEFAULT_SPRING = createSpring({
@@ -39,25 +53,14 @@ const DEFAULT_LAYOUT_CONFIG = {
   },
 };
 
-export class FocusedTree extends React.Component<Props> {
-  public static defaultProps: Partial<Props> = {
+export class FocusedTree extends React.Component<Props, State> {
+  static defaultProps: Partial<Props> = {
     expansionSpring: DEFAULT_SPRING,
     focusSpring: DEFAULT_SPRING,
     layoutConfig: DEFAULT_LAYOUT_CONFIG,
   };
 
-  public state: {
-    rects: DrawRect[];
-    offset: number[];
-    offsetVelocity: number[];
-    focusTarget: number[];
-    focusId: Id | undefined;
-    lastFocusTarget: number[];
-    lastFocusId: Id | undefined;
-    isFirstAnimate: boolean;
-    didUnmount: boolean;
-    lastT: number;
-  } = {
+  state: State = {
     rects: [],
     offset: [0, 0],
     offsetVelocity: [0, 0],
@@ -194,6 +197,7 @@ export class FocusedTree extends React.Component<Props> {
         focuses={this.getFocuses()}
         width={800}
         height={600}
+        getContent={this.props.getContent}
       />
     );
   }

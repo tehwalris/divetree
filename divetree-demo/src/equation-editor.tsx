@@ -5,6 +5,7 @@ import {
   NodeKind,
   Split,
   TightLeafNode,
+  Id,
 } from "divetree-core";
 import { unreachable } from "divetree-demo/src/util";
 
@@ -38,6 +39,7 @@ interface NumericLiteral extends BaseExpression {
 
 interface State {
   value: Expression;
+  index: Map<Id, Expression>;
 }
 
 const DEMO_EXPRESSION: Expression = {
@@ -79,6 +81,7 @@ const DEMO_EXPRESSION: Expression = {
 export class EquationEditor extends React.Component<{}, State> {
   state: State = {
     value: DEMO_EXPRESSION,
+    index: buildIndex(DEMO_EXPRESSION),
   };
 
   render() {
@@ -86,6 +89,7 @@ export class EquationEditor extends React.Component<{}, State> {
       <NavTree
         navTree={toNavTree(this.state.value)}
         getDisplayTree={this.getDisplayTree}
+        getContent={this.getContent}
       />
     );
   }
@@ -93,6 +97,39 @@ export class EquationEditor extends React.Component<{}, State> {
   getDisplayTree = (focusPath: string[]): DivetreeNode => {
     return toDisplayTree(this.state.value, focusPath, 0);
   };
+
+  getContent = (id: Id): React.ReactElement<unknown> | null => {
+    const node = this.state.index.get(id);
+    if (!node) {
+      return null;
+    }
+    switch (node.kind) {
+      case ExpressionKind.BinaryExpression:
+        return <div>{Operation[node.operation]}</div>;
+      case ExpressionKind.NumericLiteral:
+        return <div>{node.value}</div>;
+      default:
+        return unreachable(node);
+    }
+  };
+}
+
+function buildIndex(
+  node: Expression,
+  _index: Map<Id, Expression> = new Map(),
+): Map<Id, Expression> {
+  switch (node.kind) {
+    case ExpressionKind.BinaryExpression:
+      _index.set(node.id, node);
+      [node.left, node.right].forEach(c => buildIndex(c, _index));
+      break;
+    case ExpressionKind.NumericLiteral:
+      _index.set(node.id, node);
+      break;
+    default:
+      return unreachable(node);
+  }
+  return _index;
 }
 
 function toNavTree(node: Expression): NavNode {
