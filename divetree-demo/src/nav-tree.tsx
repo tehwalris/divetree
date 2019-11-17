@@ -9,6 +9,22 @@ export interface NavNode {
   children: NavNode[];
 }
 
+interface PassedDownConnections {
+  parent?: NavIndexNode;
+  previousSibling?: NavIndexNode;
+  nextSibling?: NavIndexNode;
+}
+
+interface NavIndexNode extends PassedDownConnections {
+  original: NavNode;
+  preferredChild?: NavIndexNode;
+}
+
+interface NavIndex {
+  root: NavIndexNode;
+  nodesById: Map<string, NavIndexNode>;
+}
+
 interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
@@ -80,6 +96,10 @@ export default class NavTree extends React.Component<Props, State> {
     const focusedId = focusPath.length
       ? focusPath[focusPath.length - 1]
       : navTree.id;
+
+    // TODO use this for actual nav
+    console.log(buildNavIndex(navTree));
+
     return (
       <FocusedTree
         tree={getDisplayTree([navTree.id, ...focusPath])}
@@ -95,4 +115,30 @@ function atPath(path: string[], start: NavNode): NavNode | undefined {
     (a, c) => a && a.children.find(child => child.id === c),
     start,
   );
+}
+
+function buildNavIndex(navTree: NavNode): NavIndex {
+  const nodesById = new Map<string, NavIndexNode>();
+  return {
+    root: _buildNavIndex({ original: navTree }, nodesById),
+    nodesById,
+  };
+}
+
+function _buildNavIndex(
+  node: NavIndexNode,
+  nodesById: Map<string, NavIndexNode>,
+): NavIndexNode {
+  nodesById.set(node.original.id, node);
+  const children: NavIndexNode[] = node.original.children.map(c => ({
+    original: c,
+    parent: node,
+  }));
+  children.forEach((c, i) => {
+    c.previousSibling = children[i - 1];
+    c.nextSibling = children[i + 1];
+    _buildNavIndex(c, nodesById);
+  });
+  node.preferredChild = children[0];
+  return node;
 }
