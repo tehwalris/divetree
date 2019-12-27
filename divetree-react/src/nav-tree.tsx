@@ -16,7 +16,7 @@ interface Props {
   onKeyDown: (key: string, focusedId: string) => void;
 }
 
-const NavTree: React.FC<Props> = ({
+export const NavTree: React.FC<Props> = ({
   navTree,
   getDisplayTree,
   getContent,
@@ -119,5 +119,3 @@ function _buildNavIndex(
     ) || children[0];
   return node;
 }
-
-export default NavTree;

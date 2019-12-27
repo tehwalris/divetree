@@ -73,7 +73,7 @@ export class FocusedTree extends React.Component<Props, State> {
     lastT: 0,
   };
 
-  private queue: AnimationQueue<DivetreeNode, Interpolator>;
+  private queue!: AnimationQueue<DivetreeNode, Interpolator>;
 
   componentWillMount() {
     this.queue = new AnimationQueue(

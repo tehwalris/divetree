@@ -8,7 +8,7 @@ import {
   NavNode,
 } from "divetree-core";
 import { unreachable } from "./util";
-import NavTree from "./nav-tree";
+import { NavTree } from "divetree-react";
 
 type Expression = BinaryExpression | NumericLiteral | Hole;
 
