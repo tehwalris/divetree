@@ -126,7 +126,6 @@ export class EquationEditor extends React.Component<{}, State> {
       this.setExpression(wrapAt(this.state.expression, focusedId, wrap));
     switch (key) {
       case "a": {
-        // TODO Adding a node breaks `focusPath` in `NavTree`
         setWrapped(node => ({
           id: "" + Math.random(),
           kind: ExpressionKind.BinaryExpression,
