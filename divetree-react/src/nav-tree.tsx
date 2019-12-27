@@ -13,7 +13,7 @@ interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
   getContent: GetContent;
-  onKeyDown: (key: string, focusedId: string) => void;
+  onKeyDown?: (key: string, focusedId: string) => void;
 }
 
 export const NavTree: React.FC<Props> = ({
@@ -59,7 +59,9 @@ export const NavTree: React.FC<Props> = ({
           break;
         }
         default: {
-          onKeyDown(e.key, focusedNavNode.original.id);
+          if (onKeyDown) {
+            onKeyDown(e.key, focusedNavNode.original.id);
+          }
           break;
         }
       }

@@ -96,6 +96,8 @@ export class FocusedTree extends React.Component<Props, State> {
     if (nextProps.tree !== this.props.tree) {
       this.queue.queueChange(nextProps.tree);
       this.updateFocusTarget(nextProps);
+    } else if (nextProps.focusedId !== this.props.focusedId) {
+      this.updateFocusTarget(nextProps);
     }
   }
 
