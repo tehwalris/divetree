@@ -3,6 +3,7 @@
   "workspaces": {
     "packages": [
       "divetree-core",
+      "divetree-react",
       "divetree-demo"
     ],
     "nohoist": [

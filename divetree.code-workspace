@@ -1,15 +1,16 @@
 {
-	"folders": [
-		{
-			"path": "divetree-core"
-		},
-		{
-			"path": "divetree-demo"
-		}
-	],
-	"settings": {
-		"cSpell.words": [
-			"divetree"
-		]
-	}
+  "folders": [
+    {
+      "path": "divetree-core"
+    },
+    {
+      "path": "divetree-demo"
+    },
+    {
+      "path": "divetree-react"
+    }
+  ],
+  "settings": {
+    "cSpell.words": ["divetree"]
+  }
 }

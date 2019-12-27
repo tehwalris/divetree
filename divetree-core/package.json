@@ -12,23 +12,27 @@
     "type": "git",
     "url": "https://git.dolansoft.org/philippe/divetree"
   },
-  "keywords": ["tree", "dive", "explore", "display"],
+  "keywords": [
+    "tree",
+    "dive",
+    "explore",
+    "display"
+  ],
   "author": "Philippe \"tehwalris\" Voinov",
   "license": "ISC",
   "devDependencies": {
-    "@types/jest": "^22.1.2",
-    "@types/node": "^9.4.5",
-    "@types/ramda": "^0.25.17",
-    "jest": "^22.2.2",
-    "jest-runner": "^22.3.0",
-    "ts-jest": "^22.0.4",
-    "tsc": "^1.20150623.0",
-    "typescript": "^2.7.1"
+    "@types/jest": "^24.0.25",
+    "@types/node": "^13.1.1",
+    "@types/ramda": "^0.26.39",
+    "jest": "^24.9.0",
+    "jest-runner": "^24.9.0",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.4"
   },
   "dependencies": {
     "d3-flextree": "^2.1.1",
     "kiwi.js": "^1.1.0",
-    "ramda": "^0.25.0",
+    "ramda": "^0.26.1",
     "tree-crawl": "^1.0.5"
   },
   "jest": {
@@ -37,7 +41,14 @@
     },
     "rootDir": "src",
     "testRegex": "(/__tests__/.*)\\.(tsx?)$",
-    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
     "collectCoverage": true,
     "mapCoverage": true,
     "coverageDirectory": "../coverage"
