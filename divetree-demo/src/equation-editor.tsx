@@ -155,15 +155,18 @@ export class EquationEditor extends React.Component<{}, State> {
         this.setExpression(
           map(this.state.expression, e => {
             if (
-              (e.id === focusedId &&
-                e.kind === ExpressionKind.NumericLiteral) ||
-              e.kind === ExpressionKind.Hole
+              e.id === focusedId &&
+              (e.kind === ExpressionKind.NumericLiteral ||
+                e.kind === ExpressionKind.Hole)
             ) {
-              return {
-                id: e.id,
-                kind: ExpressionKind.NumericLiteral,
-                value: 123, // TODO Prompt for value
-              };
+              const value = parseFloat(prompt("Enter a number") || "");
+              if (!isNaN(value)) {
+                return {
+                  id: e.id,
+                  kind: ExpressionKind.NumericLiteral,
+                  value,
+                };
+              }
             }
             return e;
           }),
