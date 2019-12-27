@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Node as DivetreeNode,
   NavNode,
@@ -22,12 +22,20 @@ const NavTree: React.FC<Props> = ({
   getContent,
   onKeyDown,
 }) => {
+  const lastVisitedChildren = useRef(new Map<string, string>());
+
   const [_focusedNodeId, setFocusedNodeId] = useState<string>();
 
-  const navIndex = buildNavIndex(navTree);
+  const navIndex = buildNavIndex(navTree, lastVisitedChildren.current);
   const focusedNavNode =
     (_focusedNodeId && navIndex.nodesById.get(_focusedNodeId)) || navIndex.root;
   const setFocus = (target: NavIndexNode | undefined) => {
+    if (target && target.parent) {
+      lastVisitedChildren.current.set(
+        target.parent.original.id,
+        target.original.id,
+      );
+    }
     setFocusedNodeId((target || focusedNavNode).original.id);
   };
 
@@ -79,10 +87,13 @@ function focusPathToNode(navNode: NavIndexNode): string[] {
   return path.reverse();
 }
 
-function buildNavIndex(navTree: NavNode): NavIndex {
+function buildNavIndex(
+  navTree: NavNode,
+  lastVisitedChildren: Map<string, string>,
+): NavIndex {
   const nodesById = new Map<string, NavIndexNode>();
   return {
-    root: _buildNavIndex({ original: navTree }, nodesById),
+    root: _buildNavIndex({ original: navTree }, nodesById, lastVisitedChildren),
     nodesById,
   };
 }
@@ -90,6 +101,7 @@ function buildNavIndex(navTree: NavNode): NavIndex {
 function _buildNavIndex(
   node: NavIndexNode,
   nodesById: Map<string, NavIndexNode>,
+  lastVisitedChildren: Map<string, string>,
 ): NavIndexNode {
   nodesById.set(node.original.id, node);
   const children: NavIndexNode[] = node.original.children.map(c => ({
@@ -99,9 +111,12 @@ function _buildNavIndex(
   children.forEach((c, i) => {
     c.previousSibling = children[i - 1];
     c.nextSibling = children[i + 1];
-    _buildNavIndex(c, nodesById);
+    _buildNavIndex(c, nodesById, lastVisitedChildren);
   });
-  node.preferredChild = children[0];
+  node.preferredChild =
+    children.find(
+      c => c.original.id === lastVisitedChildren.get(node.original.id),
+    ) || children[0];
   return node;
 }
 
