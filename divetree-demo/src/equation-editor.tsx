@@ -138,6 +138,38 @@ export class EquationEditor extends React.Component<{}, State> {
         }));
         break;
       }
+      case "m": {
+        setWrapped(node => ({
+          id: "" + Math.random(),
+          kind: ExpressionKind.BinaryExpression,
+          operation: Operation.Multiply,
+          left: node,
+          right: {
+            id: "" + Math.random(),
+            kind: ExpressionKind.Hole,
+          },
+        }));
+        break;
+      }
+      case "s": {
+        this.setExpression(
+          map(this.state.expression, e => {
+            if (
+              (e.id === focusedId &&
+                e.kind === ExpressionKind.NumericLiteral) ||
+              e.kind === ExpressionKind.Hole
+            ) {
+              return {
+                id: e.id,
+                kind: ExpressionKind.NumericLiteral,
+                value: 123, // TODO Prompt for value
+              };
+            }
+            return e;
+          }),
+        );
+        return;
+      }
       default: {
         break;
       }
@@ -146,6 +178,26 @@ export class EquationEditor extends React.Component<{}, State> {
 
   setExpression(expression: Expression) {
     this.setState({ expression, index: buildIndex(expression) });
+  }
+}
+
+function map(
+  oldRoot: Expression,
+  cb: (node: Expression) => Expression,
+): Expression {
+  const newRoot = cb(oldRoot);
+  switch (newRoot.kind) {
+    case ExpressionKind.BinaryExpression:
+      return {
+        ...newRoot,
+        left: map(newRoot.left, cb),
+        right: map(newRoot.right, cb),
+      };
+    case ExpressionKind.NumericLiteral:
+    case ExpressionKind.Hole:
+      return newRoot;
+    default:
+      return unreachable(newRoot);
   }
 }
 
