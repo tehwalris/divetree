@@ -1,29 +1,13 @@
 import * as React from "react";
-import { Node as DivetreeNode } from "divetree-core";
-import { FocusedTree } from "divetree-demo/src/focused-tree";
-import * as R from "ramda";
-import { GetContent } from "divetree-demo/src/rects";
-
-export interface NavNode {
-  id: string;
-  children: NavNode[];
-}
-
-interface PassedDownConnections {
-  parent?: NavIndexNode;
-  previousSibling?: NavIndexNode;
-  nextSibling?: NavIndexNode;
-}
-
-interface NavIndexNode extends PassedDownConnections {
-  original: NavNode;
-  preferredChild?: NavIndexNode;
-}
-
-interface NavIndex {
-  root: NavIndexNode;
-  nodesById: Map<string, NavIndexNode>;
-}
+import { useState, useEffect } from "react";
+import {
+  Node as DivetreeNode,
+  NavNode,
+  NavIndex,
+  NavIndexNode,
+} from "divetree-core";
+import { FocusedTree } from "./focused-tree";
+import { GetContent } from "./rects";
 
 interface Props {
   navTree: NavNode;
@@ -32,89 +16,67 @@ interface Props {
   onKeyDown: (key: string, focusedId: string) => void;
 }
 
-interface State {
-  focusPath: string[];
-}
+const NavTree: React.FC<Props> = ({
+  navTree,
+  getDisplayTree,
+  getContent,
+  onKeyDown,
+}) => {
+  const [_focusedNodeId, setFocusedNodeId] = useState<string>();
 
-export default class NavTree extends React.Component<Props, State> {
-  state: State = { focusPath: [] };
-
-  componentWillMount() {
-    document.addEventListener("keydown", this.onKeyDown);
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener("keydown", this.onKeyDown);
-  }
-
-  private onKeyDown = (e: KeyboardEvent) => {
-    const { focusPath } = this.state;
-    switch (e.key) {
-      case "ArrowLeft": {
-        this.setState({ focusPath: R.dropLast(1, focusPath) });
-        break;
-      }
-      case "ArrowRight": {
-        const currentNavNode = atPath(focusPath, this.props.navTree);
-        const target = currentNavNode && currentNavNode.children[0];
-        if (target) {
-          this.setState({ focusPath: [...focusPath, target.id] });
-        }
-        break;
-      }
-      case "ArrowUp":
-      case "ArrowDown": {
-        const parentPath = R.dropLast(1, focusPath);
-        const currentNavParent = atPath(parentPath, this.props.navTree);
-        if (!currentNavParent) {
-          break;
-        }
-        const currentIndex = currentNavParent.children.findIndex(
-          c => c.id === R.last(focusPath),
-        );
-        const target =
-          currentNavParent.children[
-            currentIndex + (e.key === "ArrowUp" ? -1 : 1)
-          ];
-        if (target) {
-          this.setState({ focusPath: [...parentPath, target.id] });
-        }
-        break;
-      }
-      default: {
-        const currentNavNode = atPath(focusPath, this.props.navTree);
-        if (currentNavNode) {
-          this.props.onKeyDown(e.key, currentNavNode.id);
-        }
-      }
-    }
+  const navIndex = buildNavIndex(navTree);
+  const focusedNavNode =
+    (_focusedNodeId && navIndex.nodesById.get(_focusedNodeId)) || navIndex.root;
+  const setFocus = (target: NavIndexNode | undefined) => {
+    setFocusedNodeId((target || focusedNavNode).original.id);
   };
 
-  render() {
-    const { getDisplayTree, navTree, getContent } = this.props;
-    const { focusPath } = this.state;
-    const focusedId = focusPath.length
-      ? focusPath[focusPath.length - 1]
-      : navTree.id;
+  useEffect(() => {
+    const onKeyDownInner = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowLeft": {
+          setFocus(focusedNavNode.parent);
+          break;
+        }
+        case "ArrowRight": {
+          setFocus(focusedNavNode.preferredChild);
+          break;
+        }
+        case "ArrowUp": {
+          setFocus(focusedNavNode.previousSibling);
+          break;
+        }
+        case "ArrowDown": {
+          setFocus(focusedNavNode.nextSibling);
+          break;
+        }
+        default: {
+          onKeyDown(e.key, focusedNavNode.original.id);
+          break;
+        }
+      }
+    };
+    document.addEventListener("keydown", onKeyDownInner);
+    return () => {
+      document.removeEventListener("keydown", onKeyDownInner);
+    };
+  });
 
-    // TODO use this for actual nav
-    console.log(buildNavIndex(navTree));
-
-    return (
-      <FocusedTree
-        tree={getDisplayTree([navTree.id, ...focusPath])}
-        focusedId={focusedId}
-        getContent={getContent}
-      />
-    );
-  }
-}
-
-function atPath(path: string[], start: NavNode): NavNode | undefined {
-  return path.reduce(
-    (a, c) => a && a.children.find(child => child.id === c),
-    start,
+  return (
+    <FocusedTree
+      tree={getDisplayTree(focusPathToNode(focusedNavNode))}
+      focusedId={focusedNavNode.original.id}
+      getContent={getContent}
+    />
   );
+};
+
+function focusPathToNode(navNode: NavIndexNode): string[] {
+  const path: string[] = [];
+  for (let c: NavIndexNode | undefined = navNode; c; c = c.parent) {
+    path.push(c.original.id);
+  }
+  return path.reverse();
 }
 
 function buildNavIndex(navTree: NavNode): NavIndex {
@@ -142,3 +104,5 @@ function _buildNavIndex(
   node.preferredChild = children[0];
   return node;
 }
+
+export default NavTree;

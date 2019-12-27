@@ -1,13 +1,14 @@
 import * as React from "react";
-import NavTree, { NavNode } from "divetree-demo/src/nav-tree";
 import {
   Node as DivetreeNode,
   NodeKind,
   Split,
   TightLeafNode,
   Id,
+  NavNode,
 } from "divetree-core";
-import { unreachable } from "divetree-demo/src/util";
+import { unreachable } from "./util";
+import NavTree from "./nav-tree";
 
 type Expression = BinaryExpression | NumericLiteral | Hole;
 
@@ -228,11 +229,13 @@ function toDisplayTree(
         {
           kind: NodeKind.TightSplit,
           split: Split.Stacked,
-          children: children.map((c): TightLeafNode => ({
-            kind: NodeKind.TightLeaf,
-            id: c.id,
-            size: [75, 25],
-          })),
+          children: children.map(
+            (c): TightLeafNode => ({
+              kind: NodeKind.TightLeaf,
+              id: c.id,
+              size: [75, 25],
+            }),
+          ),
         },
       ],
     };

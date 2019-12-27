@@ -1,7 +1,7 @@
 import * as React from "react";
 import { LooseNode } from "divetree-core";
-import { trees, focuses } from "divetree-demo/src/data";
-import { FocusedTree } from "divetree-demo/src/focused-tree";
+import { trees, focuses } from "./data";
+import { FocusedTree } from "./focused-tree";
 
 interface State {
   tree: LooseNode;

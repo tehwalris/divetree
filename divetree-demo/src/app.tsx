@@ -1,5 +1,5 @@
 import * as React from "react";
-import { EquationEditor } from "divetree-demo/src/equation-editor";
+import { EquationEditor } from "./equation-editor";
 
 class App extends React.Component {
   render() {
