@@ -191,7 +191,7 @@ function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
     node.size[0] -= node.paddingRight;
     const { x, y } = node;
     node.x = y;
-    node.y = x;
+    node.y = x - node.size[1] / 2; // HACK I'm not sure why "- node.size[1] / 2" is necessary
   });
   const treeC = calculateExtents(treeB, undefined);
 
