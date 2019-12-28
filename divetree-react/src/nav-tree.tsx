@@ -15,6 +15,7 @@ interface Props {
   getContent: GetContent;
   focusedId: string;
   onFocusedIdChange: (id: string) => void;
+  disableNav?: boolean;
   onKeyDown?: (key: string, focusedId: string) => void;
 }
 
@@ -24,6 +25,7 @@ export const NavTree: React.FC<Props> = ({
   getContent,
   focusedId,
   onFocusedIdChange,
+  disableNav,
   onKeyDown,
 }) => {
   const lastVisitedChildren = useRef(new Map<string, string>());
@@ -43,6 +45,12 @@ export const NavTree: React.FC<Props> = ({
 
   useEffect(() => {
     const onKeyDownInner = (e: KeyboardEvent) => {
+      if (onKeyDown) {
+        onKeyDown(e.key, focusedNavNode.original.id);
+      }
+      if (disableNav) {
+        return;
+      }
       switch (e.key) {
         case "h": {
           setFocus(focusedNavNode.parent);
@@ -58,12 +66,6 @@ export const NavTree: React.FC<Props> = ({
         }
         case "j": {
           setFocus(focusedNavNode.nextSibling);
-          break;
-        }
-        default: {
-          if (onKeyDown) {
-            onKeyDown(e.key, focusedNavNode.original.id);
-          }
           break;
         }
       }
