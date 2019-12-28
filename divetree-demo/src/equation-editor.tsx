@@ -46,6 +46,7 @@ interface Hole extends BaseExpression {
 interface State {
   expression: Expression;
   index: Map<Id, Expression>;
+  focusedId: string;
 }
 
 const DEMO_EXPRESSION: Expression = {
@@ -87,6 +88,7 @@ export class EquationEditor extends React.Component<{}, State> {
   state: State = {
     expression: DEMO_EXPRESSION,
     index: buildIndex(DEMO_EXPRESSION),
+    focusedId: DEMO_EXPRESSION.id,
   };
 
   render() {
@@ -95,6 +97,8 @@ export class EquationEditor extends React.Component<{}, State> {
         navTree={toNavTree(this.state.expression)}
         getDisplayTree={this.getDisplayTree}
         getContent={this.getContent}
+        focusedId={this.state.focusedId}
+        onFocusedIdChange={focusedId => this.setState({ focusedId })}
         onKeyDown={this.onKeyDown}
       />
     );

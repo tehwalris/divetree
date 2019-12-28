@@ -13,6 +13,8 @@ interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
   getContent: GetContent;
+  focusedId: string;
+  onFocusedIdChange: (id: string) => void;
   onKeyDown?: (key: string, focusedId: string) => void;
 }
 
@@ -20,15 +22,15 @@ export const NavTree: React.FC<Props> = ({
   navTree,
   getDisplayTree,
   getContent,
+  focusedId,
+  onFocusedIdChange,
   onKeyDown,
 }) => {
   const lastVisitedChildren = useRef(new Map<string, string>());
 
-  const [_focusedNodeId, setFocusedNodeId] = useState<string>();
-
   const navIndex = buildNavIndex(navTree, lastVisitedChildren.current);
   const focusedNavNode =
-    (_focusedNodeId && navIndex.nodesById.get(_focusedNodeId)) || navIndex.root;
+    (focusedId && navIndex.nodesById.get(focusedId)) || navIndex.root;
   const setFocus = (target: NavIndexNode | undefined) => {
     if (target && target.parent) {
       lastVisitedChildren.current.set(
@@ -36,7 +38,7 @@ export const NavTree: React.FC<Props> = ({
         target.original.id,
       );
     }
-    setFocusedNodeId((target || focusedNavNode).original.id);
+    onFocusedIdChange((target || focusedNavNode).original.id);
   };
 
   useEffect(() => {
