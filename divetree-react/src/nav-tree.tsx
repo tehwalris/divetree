@@ -52,18 +52,22 @@ export const NavTree: React.FC<Props> = ({
         return;
       }
       switch (e.key) {
+        case "ArrowLeft":
         case "h": {
           setFocus(focusedNavNode.parent);
           break;
         }
+        case "ArrowRight":
         case "l": {
           setFocus(focusedNavNode.preferredChild);
           break;
         }
+        case "ArrowUp":
         case "k": {
           setFocus(focusedNavNode.previousSibling);
           break;
         }
+        case "ArrowDown":
         case "j": {
           setFocus(focusedNavNode.nextSibling);
           break;
