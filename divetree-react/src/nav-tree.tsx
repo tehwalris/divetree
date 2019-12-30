@@ -7,12 +7,13 @@ import {
   NavIndexNode,
 } from "divetree-core";
 import { FocusedTree } from "./focused-tree";
-import { GetContent } from "./rects";
+import { GetContent, GetStyle } from "./rects";
 
 interface Props {
   navTree: NavNode;
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
   getContent: GetContent;
+  getStyle?: GetStyle;
   focusedId: string;
   onFocusedIdChange: (id: string) => void;
   disableNav?: boolean;
@@ -23,6 +24,7 @@ export const NavTree: React.FC<Props> = ({
   navTree,
   getDisplayTree,
   getContent,
+  getStyle,
   focusedId,
   onFocusedIdChange,
   disableNav,
@@ -85,6 +87,7 @@ export const NavTree: React.FC<Props> = ({
       tree={getDisplayTree(focusPathToNode(focusedNavNode))}
       focusedId={focusedNavNode.original.id}
       getContent={getContent}
+      getStyle={getStyle}
     />
   );
 };

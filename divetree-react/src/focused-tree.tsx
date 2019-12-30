@@ -11,7 +11,7 @@ import {
   doLayoutAnimated,
   Id,
 } from "divetree-core";
-import { Rects, GetContent } from "./rects";
+import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
 import * as R from "ramda";
 
@@ -22,6 +22,7 @@ interface Props {
   tree: DivetreeNode;
   focusedId: Id | undefined;
   getContent: GetContent;
+  getStyle?: GetStyle;
 }
 
 interface State {
@@ -200,6 +201,7 @@ export class FocusedTree extends React.Component<Props, State> {
         width={800}
         height={600}
         getContent={this.props.getContent}
+        getStyle={this.props.getStyle}
       />
     );
   }
