@@ -28,7 +28,7 @@ export class RectVar {
     this.visible = visible;
   }
 
-  setPreferedSize(size: number[]): kiwi.Constraint[] {
+  setPreferredSize(size: number[]): kiwi.Constraint[] {
     return this.constrainSize(size, kiwi.Operator.Eq, kiwi.Strength.medium);
   }
 
@@ -249,22 +249,24 @@ function convertTightSplit(node: TightSplitNode, config: Config): Output {
   }
 
   // children fill bounding rect
-  children.map(e => e.boundingRect).forEach(e => {
-    constraints.push(
-      new kiwi.Constraint(
-        e.intervals[equalAxis].start,
-        kiwi.Operator.Eq,
-        boundingRect.intervals[equalAxis].start,
-      ),
-    );
-    constraints.push(
-      new kiwi.Constraint(
-        e.intervals[equalAxis].end,
-        kiwi.Operator.Eq,
-        boundingRect.intervals[equalAxis].end,
-      ),
-    );
-  });
+  children
+    .map(e => e.boundingRect)
+    .forEach(e => {
+      constraints.push(
+        new kiwi.Constraint(
+          e.intervals[equalAxis].start,
+          kiwi.Operator.Eq,
+          boundingRect.intervals[equalAxis].start,
+        ),
+      );
+      constraints.push(
+        new kiwi.Constraint(
+          e.intervals[equalAxis].end,
+          kiwi.Operator.Eq,
+          boundingRect.intervals[equalAxis].end,
+        ),
+      );
+    });
 
   // bounding rect is tight around children
   const firstChild = children[0].boundingRect;
@@ -297,7 +299,7 @@ function convertTightLeaf(node: TightLeafNode): Output {
     boundingRect: rect,
     rects: [rect],
     constraints: [
-      ...rect.setPreferedSize(node.size),
+      ...rect.setPreferredSize(node.size),
       ...rect.setMinSize(node.size),
     ],
   };
