@@ -32,18 +32,28 @@ export const NavTree: React.FC<Props> = ({
 }) => {
   const lastVisitedChildren = useRef(new Map<string, string>());
 
+  // TODO The nav index will currently keep growing with no limit
   const navIndex = buildNavIndex(navTree, lastVisitedChildren.current);
   const focusedNavNode =
     (focusedId && navIndex.nodesById.get(focusedId)) || navIndex.root;
-  const setFocus = (target: NavIndexNode | undefined) => {
+
+  const updateLastVisitedChildrenFromVisit = (
+    target: NavIndexNode | undefined,
+  ) => {
     if (target && target.parent) {
       lastVisitedChildren.current.set(
         target.parent.original.id,
         target.original.id,
       );
     }
+  };
+  const setFocus = (target: NavIndexNode | undefined) => {
+    updateLastVisitedChildrenFromVisit(target);
     onFocusedIdChange((target || focusedNavNode).original.id);
   };
+  useEffect(() => {
+    updateLastVisitedChildrenFromVisit(navIndex.nodesById.get(focusedId));
+  }, [focusedId, navIndex]);
 
   useEffect(() => {
     const onKeyDownInner = (e: KeyboardEvent) => {
