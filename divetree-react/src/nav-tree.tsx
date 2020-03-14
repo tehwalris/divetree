@@ -52,8 +52,8 @@ export const NavTree: React.FC<Props> = ({
     onFocusedIdChange((target || focusedNavNode).original.id);
   };
   useEffect(() => {
-    updateLastVisitedChildrenFromVisit(navIndex.nodesById.get(focusedId));
-  }, [focusedId, navIndex]);
+    updateLastVisitedChildrenFromVisit(focusedNavNode);
+  }, [focusedNavNode]);
 
   useEffect(() => {
     const onKeyDownInner = (e: KeyboardEvent) => {
