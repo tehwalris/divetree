@@ -6,7 +6,7 @@ type SizeTree = {
   children: SizeTree[];
 };
 
-export function layoutTightSplit(
+export function layoutTight(
   node: TightNode,
 ): { layout: PublicOutputNode[]; size: number[] } {
   const minSizeTree = calculateMinSize(node);

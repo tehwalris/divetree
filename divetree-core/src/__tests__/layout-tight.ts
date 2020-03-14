@@ -1,9 +1,9 @@
 import { TightNode, NodeKind, Split } from "../interfaces/input";
 import { PublicOutputNode } from "../interfaces/output";
-import { layoutTightSplit } from "../tight-layout";
+import { layoutTight } from "../tight-layout";
 import { sortBy } from "lodash";
 
-describe("layoutTightSplit", () => {
+describe("layoutTight", () => {
   interface Case {
     label: string;
     node: TightNode;
@@ -138,7 +138,7 @@ describe("layoutTightSplit", () => {
 
   for (const c of cases) {
     test(c.label, () => {
-      const actual = layoutTightSplit(c.node);
+      const actual = layoutTight(c.node);
       expect(sortBy(actual.layout, e => e.id)).toEqual(
         sortBy(c.layout, e => e.id),
       );
