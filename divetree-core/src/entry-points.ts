@@ -1,23 +1,19 @@
-import { Node, NodeKind } from "./interfaces/input";
-import {
-  PublicOutputNode,
-  InternalOutputNode,
-  isPublicOutputNode,
-} from "./interfaces/output";
-import { Config, convertAny, Output } from "./tree-to-constraints";
-import { Interpolator, makeInterpolator } from "./interpolate";
-import { Id } from "./interfaces/input";
-import { planAnimation } from "./plan-animation";
-import * as R from "ramda";
 import { flextree } from "d3-flextree";
 import * as kiwi from "kiwi.js";
+import * as R from "ramda";
+import { Id, Node, NodeKind } from "./interfaces/input";
+import { InternalOutputNode, PublicOutputNode } from "./interfaces/output";
 import {
+  Extents,
   TreeNode,
   WorkingNodeA,
   WorkingNodeB,
   WorkingNodeC,
-  Extents,
 } from "./interfaces/working";
+import { Interpolator, makeInterpolator } from "./interpolate";
+import { planAnimation } from "./plan-animation";
+import { layoutTight } from "./tight-layout";
+import { Config, convertAny, Output } from "./tree-to-constraints";
 
 export function doLayout(root: Node, config: Config): InternalOutputNode[] {
   return [..._doLayoutNew(root, config).values()];
@@ -73,20 +69,16 @@ function toWorkingTree(
         parent,
       };
     case NodeKind.TightSplit:
-      const oldLayout = _doLayoutOld(node, config);
-      const { size } = oldLayout.boundingRect.build();
+      const { layout, size } = layoutTight(node);
       return {
         size,
         paddingRight: 0,
         data: node,
         getOutput: v =>
-          oldLayout.rects
-            .map(e => e.build())
-            .filter(isPublicOutputNode)
-            .map(e => ({
-              ...e,
-              offset: [e.offset[0] + v.x, e.offset[1] + v.y],
-            })),
+          layout.map(e => ({
+            ...e,
+            offset: [e.offset[0] + v.x, e.offset[1] + v.y],
+          })),
         children: [],
         parent,
       };
