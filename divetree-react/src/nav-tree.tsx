@@ -14,7 +14,7 @@ interface Props {
   getDisplayTree: (focusPath: string[]) => DivetreeNode;
   getContent: GetContent;
   getStyle?: GetStyle;
-  focusedId: string;
+  focusedIdPath: string[];
   onFocusedIdChange: (id: string) => void;
   disableNav?: boolean;
   onKeyDown?: (key: string, focusedId: string) => void;
@@ -25,7 +25,7 @@ export const NavTree: React.FC<Props> = ({
   getDisplayTree,
   getContent,
   getStyle,
-  focusedId,
+  focusedIdPath: _focusedIdPath,
   onFocusedIdChange,
   disableNav,
   onKeyDown,
@@ -33,9 +33,11 @@ export const NavTree: React.FC<Props> = ({
   // TODO The will currently keep growing with no limit
   const lastVisitedChildren = useRef(new Map<string, string>());
 
-  const navIndex = buildNavIndex(navTree, lastVisitedChildren.current);
-  const focusedNavNode =
-    (focusedId && navIndex.nodesById.get(focusedId)) || navIndex.root;
+  const { focusedIdPath, focusedNavNode } = buildValidNavIndex(
+    navTree,
+    lastVisitedChildren.current,
+    _focusedIdPath,
+  );
 
   const updateLastVisitedChildrenFromVisit = (
     target: NavIndexNode | undefined,
@@ -94,7 +96,7 @@ export const NavTree: React.FC<Props> = ({
 
   return (
     <FocusedTree
-      tree={getDisplayTree(focusPathToNode(focusedNavNode))}
+      tree={getDisplayTree(focusedIdPath)}
       focusedId={focusedNavNode.original.id}
       getContent={getContent}
       getStyle={getStyle}
@@ -102,30 +104,61 @@ export const NavTree: React.FC<Props> = ({
   );
 };
 
-function focusPathToNode(navNode: NavIndexNode): string[] {
-  const path: string[] = [];
-  for (let c: NavIndexNode | undefined = navNode; c; c = c.parent) {
-    path.push(c.original.id);
-  }
-  return path.reverse();
-}
-
-function buildNavIndex(
+function buildValidNavIndex(
   navTree: NavNode,
   lastVisitedChildren: Map<string, string>,
-): NavIndex {
-  const nodesById = new Map<string, NavIndexNode>();
-  return {
-    root: _buildNavIndex({ original: navTree }, nodesById, lastVisitedChildren),
-    nodesById,
-  };
+  focusedIdPath: string[],
+): {
+  navIndex: NavIndex;
+  focusedNavNode: NavIndexNode;
+  focusedIdPath: string[];
+} {
+  const navIndex = buildNavIndexAlongPath(
+    navTree,
+    lastVisitedChildren,
+    focusedIdPath,
+  );
+  const focusedNavNode = navIndex?.nodesById.get(
+    focusedIdPath[focusedIdPath.length - 1],
+  );
+  if (!navIndex || !focusedNavNode) {
+    console.warn("invalid focusedIdPath", focusedIdPath, navTree);
+    return buildValidNavIndex(navTree, lastVisitedChildren, [navTree.id]);
+  }
+  return { navIndex, focusedNavNode, focusedIdPath };
 }
 
-function _buildNavIndex(
+function buildNavIndexAlongPath(
+  navTree: NavNode,
+  lastVisitedChildren: Map<string, string>,
+  idPath: string[],
+): NavIndex | undefined {
+  const nodesById = new Map<string, NavIndexNode>();
+  const indexRoot = _buildNavIndexAlongPath(
+    { original: navTree },
+    nodesById,
+    lastVisitedChildren,
+    idPath,
+    false,
+  );
+  return (
+    indexRoot && {
+      root: indexRoot,
+      nodesById,
+    }
+  );
+}
+
+function _buildNavIndexAlongPath(
   node: NavIndexNode,
   nodesById: Map<string, NavIndexNode>,
   lastVisitedChildren: Map<string, string>,
-): NavIndexNode {
+  path: string[],
+  buildExtraLevel: boolean,
+): NavIndexNode | undefined {
+  if ((!path.length || node.original.id !== path[0]) && !buildExtraLevel) {
+    return undefined;
+  }
   nodesById.set(node.original.id, node);
   const children: NavIndexNode[] = node.original.children.map(c => ({
     original: c,
@@ -134,7 +167,13 @@ function _buildNavIndex(
   children.forEach((c, i) => {
     c.previousSibling = children[i - 1];
     c.nextSibling = children[i + 1];
-    _buildNavIndex(c, nodesById, lastVisitedChildren);
+    _buildNavIndexAlongPath(
+      c,
+      nodesById,
+      lastVisitedChildren,
+      path.slice(1),
+      (path.length === 1 || path.length === 0) && !buildExtraLevel,
+    );
   });
   node.preferredChild =
     children.find(
