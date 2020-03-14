@@ -1,0 +1,87 @@
+import { NodeKind, Split, TightNode } from "./interfaces/input";
+import { PublicOutputNode } from "./interfaces/output";
+
+type SizeTree = {
+  size: number[];
+  children: SizeTree[];
+};
+
+export function layoutTightSplit(node: TightNode): PublicOutputNode[] {
+  const minSizeTree = calculateMinSize(node);
+  return layoutTightSplitToFill(node, minSizeTree, minSizeTree.size, [0, 0]);
+}
+
+function getAggregationPerDimension(split: Split) {
+  return split === Split.Stacked
+    ? {
+        maxDim: 0,
+        sumDim: 1,
+      }
+    : {
+        maxDim: 1,
+        sumDim: 0,
+      };
+}
+
+function calculateMinSize(node: TightNode): SizeTree {
+  if (node.kind === NodeKind.TightLeaf) {
+    return { size: node.size, children: [] };
+  }
+  const childSizeTrees = node.children.map(c => calculateMinSize(c));
+  const { maxDim, sumDim } = getAggregationPerDimension(node.split);
+  const combinedSize = [0, 0];
+  combinedSize[maxDim] = childSizeTrees
+    .map(c => c.size[maxDim])
+    .reduce((a, c) => Math.max(a, c), 0);
+  combinedSize[sumDim] = childSizeTrees
+    .map(c => c.size[sumDim])
+    .reduce((a, c) => a + c, 0);
+  return { size: combinedSize, children: childSizeTrees };
+}
+
+function layoutTightSplitToFill(
+  node: TightNode,
+  minSizeTree: SizeTree,
+  fillSize: number[],
+  offset: number[],
+): PublicOutputNode[] {
+  if (node.kind === NodeKind.TightLeaf) {
+    return [
+      {
+        id: node.id,
+        visible: true,
+        size: fillSize,
+        offset,
+      },
+    ];
+  }
+  const { sumDim } = getAggregationPerDimension(node.split);
+  const extraTotalOnSumDim =
+    fillSize[sumDim] -
+    minSizeTree.children.map(c => c.size[sumDim]).reduce((a, c) => a + c, 0);
+  const usualExtraPerNodeOnSumDim = Math.floor(
+    extraTotalOnSumDim / node.children.length,
+  );
+  let currentOffset = offset;
+  const out = [];
+  for (let i = 0; i < node.children.length; i++) {
+    const childFillSize = [...fillSize];
+    childFillSize[sumDim] = minSizeTree.children[i].size[sumDim];
+    childFillSize[sumDim] += usualExtraPerNodeOnSumDim;
+    if (i + 1 === node.children.length) {
+      childFillSize[sumDim] +=
+        extraTotalOnSumDim - usualExtraPerNodeOnSumDim * node.children.length;
+    }
+    out.push(
+      ...layoutTightSplitToFill(
+        node.children[i],
+        minSizeTree.children[i],
+        childFillSize,
+        currentOffset,
+      ),
+    );
+    currentOffset = [...currentOffset];
+    currentOffset[sumDim] += childFillSize[sumDim];
+  }
+  return out;
+}
