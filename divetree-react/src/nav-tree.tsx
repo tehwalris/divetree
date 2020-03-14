@@ -30,9 +30,9 @@ export const NavTree: React.FC<Props> = ({
   disableNav,
   onKeyDown,
 }) => {
+  // TODO The will currently keep growing with no limit
   const lastVisitedChildren = useRef(new Map<string, string>());
 
-  // TODO The nav index will currently keep growing with no limit
   const navIndex = buildNavIndex(navTree, lastVisitedChildren.current);
   const focusedNavNode =
     (focusedId && navIndex.nodesById.get(focusedId)) || navIndex.root;
