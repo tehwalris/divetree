@@ -7,14 +7,16 @@ describe("layoutTightSplit", () => {
   interface Case {
     label: string;
     node: TightNode;
-    output: PublicOutputNode[];
+    layout: PublicOutputNode[];
+    size: number[];
   }
 
   const cases: Case[] = [
     {
       label: "only leaf",
       node: { kind: NodeKind.TightLeaf, id: "a", size: [40, 30] },
-      output: [{ id: "a", visible: true, size: [40, 30], offset: [0, 0] }],
+      layout: [{ id: "a", visible: true, size: [40, 30], offset: [0, 0] }],
+      size: [40, 30],
     },
     {
       label: "split with single stacked leaf",
@@ -23,7 +25,8 @@ describe("layoutTightSplit", () => {
         split: Split.Stacked,
         children: [{ kind: NodeKind.TightLeaf, id: "a", size: [40, 30] }],
       },
-      output: [{ id: "a", visible: true, size: [40, 30], offset: [0, 0] }],
+      layout: [{ id: "a", visible: true, size: [40, 30], offset: [0, 0] }],
+      size: [40, 30],
     },
     {
       label: "split with two stacked leaves of equal size",
@@ -35,10 +38,11 @@ describe("layoutTightSplit", () => {
           { kind: NodeKind.TightLeaf, id: "b", size: [40, 30] },
         ],
       },
-      output: [
+      layout: [
         { id: "a", visible: true, size: [40, 30], offset: [0, 0] },
         { id: "b", visible: true, size: [40, 30], offset: [0, 30] },
       ],
+      size: [40, 60],
     },
     {
       label: "split with two stacked leaves of unequal size",
@@ -50,10 +54,11 @@ describe("layoutTightSplit", () => {
           { kind: NodeKind.TightLeaf, id: "b", size: [40, 25] },
         ],
       },
-      output: [
+      layout: [
         { id: "a", visible: true, size: [45, 20], offset: [0, 0] },
         { id: "b", visible: true, size: [45, 25], offset: [0, 20] },
       ],
+      size: [45, 45],
     },
     {
       label:
@@ -73,11 +78,12 @@ describe("layoutTightSplit", () => {
           },
         ],
       },
-      output: [
+      layout: [
         { id: "a", visible: true, size: [30, 105], offset: [0, 0] },
         { id: "b-a", visible: true, size: [45, 50], offset: [30, 0] },
         { id: "b-b", visible: true, size: [45, 55], offset: [30, 50] },
       ],
+      size: [75, 105],
     },
     {
       label:
@@ -97,11 +103,12 @@ describe("layoutTightSplit", () => {
           },
         ],
       },
-      output: [
+      layout: [
         { id: "a", visible: true, size: [30, 45], offset: [0, 0] },
         { id: "b-a", visible: true, size: [45, 20], offset: [30, 0] },
         { id: "b-b", visible: true, size: [45, 25], offset: [30, 20] },
       ],
+      size: [75, 45],
     },
     {
       label: "non-integer sizes when stretching split",
@@ -120,19 +127,22 @@ describe("layoutTightSplit", () => {
           },
         ],
       },
-      output: [
+      layout: [
         { id: "a", visible: true, size: [30, 100], offset: [0, 0] },
         { id: "b-a", visible: true, size: [45, 47], offset: [30, 0] },
         { id: "b-b", visible: true, size: [45, 53], offset: [30, 47] },
       ],
+      size: [75, 100],
     },
   ];
 
   for (const c of cases) {
     test(c.label, () => {
-      const actual = sortBy(layoutTightSplit(c.node), e => e.id);
-      const expected = sortBy(c.output, e => e.id);
-      expect(actual).toEqual(expected);
+      const actual = layoutTightSplit(c.node);
+      expect(sortBy(actual.layout, e => e.id)).toEqual(
+        sortBy(c.layout, e => e.id),
+      );
+      expect(actual.size).toEqual(c.size);
     });
   }
 });

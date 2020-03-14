@@ -6,9 +6,14 @@ type SizeTree = {
   children: SizeTree[];
 };
 
-export function layoutTightSplit(node: TightNode): PublicOutputNode[] {
+export function layoutTightSplit(
+  node: TightNode,
+): { layout: PublicOutputNode[]; size: number[] } {
   const minSizeTree = calculateMinSize(node);
-  return layoutTightSplitToFill(node, minSizeTree, minSizeTree.size, [0, 0]);
+  return {
+    layout: layoutTightSplitToFill(node, minSizeTree, minSizeTree.size, [0, 0]),
+    size: minSizeTree.size,
+  };
 }
 
 function getAggregationPerDimension(split: Split) {
