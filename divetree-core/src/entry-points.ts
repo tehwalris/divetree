@@ -1,5 +1,4 @@
 import { flextree } from "d3-flextree";
-import * as kiwi from "kiwi.js";
 import * as R from "ramda";
 import { Id, Node, NodeKind } from "./interfaces/input";
 import { InternalOutputNode, PublicOutputNode } from "./interfaces/output";
@@ -13,7 +12,20 @@ import {
 import { Interpolator, makeInterpolator } from "./interpolate";
 import { planAnimation } from "./plan-animation";
 import { layoutTight } from "./tight-layout";
-import { Config, convertAny, Output } from "./tree-to-constraints";
+
+export interface Config {
+  // TODO some of these might not be used any more
+
+  loose: {
+    // distances from parent to children
+    singleChildDistance: number; // if only one child
+    multiChildDistance: number; // if more than one child
+
+    siblingDistance: number; // vertical between children
+
+    verticalPadding: number; // between bounding box and parent/children
+  };
+}
 
 export function doLayout(root: Node, config: Config): InternalOutputNode[] {
   return [..._doLayoutNew(root, config).values()];
@@ -31,19 +43,6 @@ export function doLayoutAnimated(
     makeInterpolator(beforeRects, afterRects, e),
   );
   return t => R.chain(e => e(t), interpolators);
-}
-
-function _doLayoutOld(root: Node, config: Config): Output {
-  const converted = convertAny(root, config);
-  const solver = new kiwi.Solver();
-  converted.constraints.forEach(e => solver.addConstraint(e));
-  [0, 0].forEach((v, i) => {
-    const variable = converted.boundingRect.intervals[i].start;
-    solver.addEditVariable(variable, kiwi.Strength.strong);
-    solver.suggestValue(variable, v);
-  });
-  solver.updateVariables();
-  return converted;
 }
 
 function toWorkingTree(

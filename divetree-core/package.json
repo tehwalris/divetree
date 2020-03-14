@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "d3-flextree": "^2.1.1",
-    "kiwi.js": "^1.1.0",
     "ramda": "^0.26.1",
     "tree-crawl": "^1.0.5"
   },
