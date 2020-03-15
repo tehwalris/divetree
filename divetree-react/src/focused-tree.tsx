@@ -47,10 +47,10 @@ const DEFAULT_SPRING = createSpring({
 
 const DEFAULT_LAYOUT_CONFIG = {
   loose: {
-    verticalPadding: 20,
-    siblingDistance: 20,
+    verticalPadding: 7,
+    siblingDistance: 7,
     singleChildDistance: 20,
-    multiChildDistance: 40,
+    multiChildDistance: 20,
   },
 };
 
