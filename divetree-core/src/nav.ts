@@ -1,6 +1,6 @@
 export interface NavNode {
   id: string;
-  children: NavNode[];
+  getChildren: () => NavNode[];
 }
 
 export interface PassedDownConnections {

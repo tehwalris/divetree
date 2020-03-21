@@ -160,7 +160,7 @@ function _buildNavIndexAlongPath(
     return undefined;
   }
   nodesById.set(node.original.id, node);
-  const children: NavIndexNode[] = node.original.children.map(c => ({
+  const children: NavIndexNode[] = node.original.getChildren().map(c => ({
     original: c,
     parent: node,
   }));
