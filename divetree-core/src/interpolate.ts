@@ -1,6 +1,7 @@
 import { Id } from "./interfaces/input";
 import { InternalOutputNode as Node } from "./interfaces/output";
 import { AnimationGroup, AnimationKind } from "./plan-animation";
+import { unionOffsetRects } from "./geometry";
 
 export interface DrawRectScaling {
   precomputed: {
@@ -46,19 +47,7 @@ export function makeInterpolator(
       if (!b || !a) {
         return undefined;
       }
-      const size = [];
-      const offset = [];
-      for (let dim = 0; dim < 2; dim++) {
-        const values = [];
-        for (const node of [a, b]) {
-          values.push(node.offset[dim], node.offset[dim] + node.size[dim]);
-        }
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        size.push(max - min);
-        offset.push(min);
-      }
-      return { size, offset };
+      return unionOffsetRects([a, b]);
     });
     return t =>
       animation.content

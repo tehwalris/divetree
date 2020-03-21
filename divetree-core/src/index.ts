@@ -9,3 +9,4 @@ export {
 export { createSpring, Spring } from "./spring";
 export { AnimationQueue } from "./animation-queue";
 export * from "./nav";
+export { unionOffsetRects, offsetRectsMayIntersect } from "./geometry";
