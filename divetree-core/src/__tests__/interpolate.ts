@@ -77,12 +77,19 @@ function vector2dEqualEnough(a: number[], b: number[]): boolean {
 }
 
 function drawRectEqualEnough(a: DrawRect, b: DrawRect): boolean {
-  const baseMatches =
+  let baseMatches =
     a.id === b.id &&
     a.lifecycle === b.lifecycle &&
     vector2dEqualEnough(a.withoutScaling.size, b.withoutScaling.size) &&
     vector2dEqualEnough(a.withoutScaling.offset, b.withoutScaling.offset) &&
-    !a.withScaling === !b.withScaling;
+    !a.withScaling === !b.withScaling &&
+    !a.transitionBound === !b.transitionBound;
+  if (a.transitionBound && b.transitionBound) {
+    baseMatches =
+      baseMatches &&
+      vector2dEqualEnough(a.transitionBound.size, b.transitionBound.size) &&
+      vector2dEqualEnough(a.transitionBound.offset, b.transitionBound.offset);
+  }
   if (!a.withScaling || !baseMatches) {
     return baseMatches;
   }
@@ -119,6 +126,7 @@ describe("makeInterpolator", () => {
             size: [12.5, 10],
             offset: [47.5, 55],
           },
+          transitionBound: { size: [20, 30], offset: [40, 40] },
         },
         {
           id: "B",
@@ -127,6 +135,7 @@ describe("makeInterpolator", () => {
             size: [40, 40],
             offset: [15, 40],
           },
+          transitionBound: { size: [60, 40], offset: [10, 40] },
         },
       ],
     ),

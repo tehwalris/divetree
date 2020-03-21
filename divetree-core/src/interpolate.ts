@@ -1,8 +1,5 @@
 import { Id } from "./interfaces/input";
-import {
-  InternalOutputNode as Node,
-  InternalOutputNode,
-} from "./interfaces/output";
+import { InternalOutputNode as Node } from "./interfaces/output";
 import { AnimationGroup, AnimationKind } from "./plan-animation";
 
 export interface DrawRectScaling {
@@ -24,6 +21,15 @@ export interface DrawRect {
     offset: number[];
   };
   withScaling?: DrawRectScaling;
+
+  // transitionBound describes the bounding box within which
+  // all member nodes will stay throughout the whole transition.
+  // It is only valid from transitions between 0 and 1. Nodes may
+  // move outside of this box when overshooting.
+  transitionBound?: {
+    size: number[];
+    offset: number[];
+  };
 }
 
 export type Interpolator = (t: number) => DrawRect[];
@@ -34,9 +40,29 @@ export function makeInterpolator(
   animation: AnimationGroup,
 ): Interpolator {
   if (animation.kind === AnimationKind.Transform) {
+    const transitionBounds = animation.content.map(id => {
+      const b = before.get(id);
+      const a = after.get(id);
+      if (!b || !a) {
+        return undefined;
+      }
+      const size = [];
+      const offset = [];
+      for (let dim = 0; dim < 2; dim++) {
+        const values = [];
+        for (const node of [a, b]) {
+          values.push(node.offset[dim], node.offset[dim] + node.size[dim]);
+        }
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        size.push(max - min);
+        offset.push(min);
+      }
+      return { size, offset };
+    });
     return t =>
       animation.content
-        .map(id => {
+        .map((id, i) => {
           const b = before.get(id);
           const a = after.get(id);
           if (!b || !a) {
@@ -52,6 +78,7 @@ export function makeInterpolator(
               size: mixVector(b.size, a.size, t),
               offset: mixVector(b.offset, a.offset, t),
             },
+            transitionBound: transitionBounds[i],
           };
         })
         .filter(v => v)
@@ -104,8 +131,16 @@ export function makeInterpolator(
       .map(v => v!);
   };
   return animation.kind === AnimationKind.Enter
-    ? genericEnterLeave(after, t => t - 1, t => t)
-    : genericEnterLeave(before, t => t, t => 1 - t);
+    ? genericEnterLeave(
+        after,
+        t => t - 1,
+        t => t,
+      )
+    : genericEnterLeave(
+        before,
+        t => t,
+        t => 1 - t,
+      );
 }
 
 function getCenterLeft(rect: Node): number[] {
