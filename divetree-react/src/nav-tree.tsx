@@ -17,7 +17,7 @@ interface Props {
   focusedIdPath: string[];
   onFocusedIdChange: (id: string) => void;
   disableNav?: boolean;
-  onKeyDown?: (key: string, focusedId: string) => void;
+  onKeyDown?: (event: KeyboardEvent, focusedId: string) => boolean | undefined;
 }
 
 export const NavTree: React.FC<Props> = ({
@@ -59,10 +59,14 @@ export const NavTree: React.FC<Props> = ({
 
   useEffect(() => {
     const onKeyDownInner = (e: KeyboardEvent) => {
+      let handleNav = !disableNav;
       if (onKeyDown) {
-        onKeyDown(e.key, focusedNavNode.original.id);
+        const continueHandling = onKeyDown(e, focusedNavNode.original.id);
+        if (continueHandling === false) {
+          handleNav = false;
+        }
       }
-      if (disableNav) {
+      if (!handleNav) {
         return;
       }
       switch (e.key) {
