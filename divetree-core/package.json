@@ -1,6 +1,8 @@
 {
   "name": "divetree-core",
   "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
   "description": "Displays a tree which you can dive into interactively.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -19,7 +21,6 @@
     "display"
   ],
   "author": "Philippe \"tehwalris\" Voinov",
-  "license": "ISC",
   "devDependencies": {
     "@types/jest": "^24.0.25",
     "@types/lodash": "^4.14.149",
