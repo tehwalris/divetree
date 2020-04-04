@@ -43,9 +43,11 @@ interface Hole extends BaseExpression {
   kind: ExpressionKind.Hole;
 }
 
+type Index = Map<Id, { idPath: string[]; node: Expression }>;
+
 interface State {
   expression: Expression;
-  index: Map<Id, Expression>;
+  index: Index;
   focusedId: string;
 }
 
@@ -92,12 +94,17 @@ export class EquationEditor extends React.Component<{}, State> {
   };
 
   render() {
+    console.log(
+      "DEBUG",
+      this.state.focusedId,
+      this.state.index.get(this.state.focusedId)?.idPath || [],
+    );
     return (
       <NavTree
         navTree={toNavTree(this.state.expression)}
         getDisplayTree={this.getDisplayTree}
         getContent={this.getContent}
-        focusedId={this.state.focusedId}
+        focusedIdPath={this.state.index.get(this.state.focusedId)?.idPath || []}
         onFocusedIdChange={focusedId => this.setState({ focusedId })}
         onKeyDown={this.onKeyDown}
       />
@@ -109,10 +116,11 @@ export class EquationEditor extends React.Component<{}, State> {
   };
 
   getContent = (id: Id): React.ReactElement<unknown> | null => {
-    const node = this.state.index.get(id);
-    if (!node) {
+    const indexEntry = this.state.index.get(id);
+    if (!indexEntry) {
       return null;
     }
+    const { node } = indexEntry;
     switch (node.kind) {
       case ExpressionKind.BinaryExpression:
         return <div>{Operation[node.operation]}</div>;
@@ -125,10 +133,13 @@ export class EquationEditor extends React.Component<{}, State> {
     }
   };
 
-  onKeyDown = (key: string, focusedId: string) => {
+  onKeyDown = (
+    event: KeyboardEvent,
+    focusedId: string,
+  ): boolean | undefined => {
     const setWrapped = (wrap: (node: Expression) => Expression) =>
       this.setExpression(wrapAt(this.state.expression, focusedId, wrap));
-    switch (key) {
+    switch (event.key) {
       case "a": {
         setWrapped(node => ({
           id: "" + Math.random(),
@@ -140,7 +151,7 @@ export class EquationEditor extends React.Component<{}, State> {
             kind: ExpressionKind.Hole,
           },
         }));
-        break;
+        return false;
       }
       case "m": {
         setWrapped(node => ({
@@ -153,7 +164,7 @@ export class EquationEditor extends React.Component<{}, State> {
             kind: ExpressionKind.Hole,
           },
         }));
-        break;
+        return false;
       }
       case "s": {
         this.setExpression(
@@ -175,10 +186,10 @@ export class EquationEditor extends React.Component<{}, State> {
             return e;
           }),
         );
-        return;
+        return false;
       }
       default: {
-        break;
+        return true;
       }
     }
   };
@@ -228,16 +239,13 @@ function wrapAt(
 
 function buildIndex(
   node: Expression,
-  _index: Map<Id, Expression> = new Map(),
-): Map<Id, Expression> {
-  switch (node.kind) {
-    case ExpressionKind.BinaryExpression:
-      _index.set(node.id, node);
-      [node.left, node.right].forEach(c => buildIndex(c, _index));
-      break;
-    default:
-      _index.set(node.id, node);
-      break;
+  _index: Index = new Map(),
+  parentIdPath: string[] = [],
+): Index {
+  const idPath = [...parentIdPath, node.id];
+  _index.set(node.id, { idPath, node: node });
+  if (node.kind === ExpressionKind.BinaryExpression) {
+    [node.left, node.right].forEach(c => buildIndex(c, _index, idPath));
   }
   return _index;
 }
@@ -247,12 +255,12 @@ function toNavTree(node: Expression): NavNode {
     case ExpressionKind.BinaryExpression:
       return {
         id: node.id,
-        children: [node.left, node.right].map(toNavTree),
+        getChildren: () => [node.left, node.right].map(toNavTree),
       };
     default:
       return {
         id: node.id,
-        children: [],
+        getChildren: () => [],
       };
   }
 }
