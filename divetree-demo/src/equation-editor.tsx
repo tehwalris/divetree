@@ -94,11 +94,6 @@ export class EquationEditor extends React.Component<{}, State> {
   };
 
   render() {
-    console.log(
-      "DEBUG",
-      this.state.focusedId,
-      this.state.index.get(this.state.focusedId)?.idPath || [],
-    );
     return (
       <NavTree
         navTree={toNavTree(this.state.expression)}
