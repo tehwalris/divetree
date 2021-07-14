@@ -78,7 +78,7 @@ export class FocusedTree extends React.Component<Props, State> {
 
   private queue!: AnimationQueue<DivetreeNode, Interpolator>;
 
-  componentWillMount() {
+  componentDidMount() {
     this.queue = new AnimationQueue(
       this.indirectSpring,
       this.indirectDoLayoutAnimated,
@@ -95,7 +95,7 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   // TODO re-queue on layout config change, otherwise it will be ignored
-  componentWillReceiveProps(nextProps: Props) {
+  UNSAFE_componentWillReceiveProps(nextProps: Props) {
     if (nextProps.tree !== this.props.tree) {
       this.queue.queueChange(nextProps.tree);
       this.updateFocusTarget(nextProps);
@@ -128,15 +128,17 @@ export class FocusedTree extends React.Component<Props, State> {
       }),
     );
     this.setState({
-      offset: springOutputs.map(e => e.position),
-      offsetVelocity: springOutputs.map(e => e.velocity),
+      offset: springOutputs.map((e) => e.position),
+      offsetVelocity: springOutputs.map((e) => e.velocity),
     });
   }
 
   private updateFocusTarget({ tree, layoutConfig, focusedId }: Props) {
     let targetRect;
     if (focusedId !== undefined) {
-      targetRect = doLayout(tree, layoutConfig!).find(e => e.id === focusedId);
+      targetRect = doLayout(tree, layoutConfig!).find(
+        (e) => e.id === focusedId,
+      );
     }
     if (targetRect) {
       const { size } = targetRect;
@@ -157,7 +159,7 @@ export class FocusedTree extends React.Component<Props, State> {
     }
   }
 
-  private indirectSpring: Spring = args => {
+  private indirectSpring: Spring = (args) => {
     return this.props.expansionSpring!(args);
   };
 
@@ -169,13 +171,8 @@ export class FocusedTree extends React.Component<Props, State> {
   };
 
   private getFocuses(): Focus[] {
-    const {
-      focusId,
-      lastFocusId,
-      offset,
-      focusTarget,
-      lastFocusTarget,
-    } = this.state;
+    const { focusId, lastFocusId, offset, focusTarget, lastFocusTarget } =
+      this.state;
     const getDistance = R.compose(
       Math.sqrt,
       R.sum,
@@ -190,14 +187,14 @@ export class FocusedTree extends React.Component<Props, State> {
     return [
       { id: focusId, progress: totalDistance - remainingDistance },
       { id: lastFocusId, progress: remainingDistance },
-    ].map(e => ({ ...e, progress: e.progress / totalDistance }));
+    ].map((e) => ({ ...e, progress: e.progress / totalDistance }));
   }
 
   render() {
     const { rects, offset, focusTarget, lastFocusTarget } = this.state;
     const viewport = { width: 800, height: 600 };
     const viewportTransitionBound = unionOffsetRects(
-      [focusTarget, lastFocusTarget].map(target => ({
+      [focusTarget, lastFocusTarget].map((target) => ({
         size: [viewport.width, viewport.height],
         offset: [
           target[0] - viewport.width / 2,
@@ -206,7 +203,7 @@ export class FocusedTree extends React.Component<Props, State> {
       })),
     );
     const possiblyVisibleRects = rects.filter(
-      rect =>
+      (rect) =>
         !rect.transitionBound ||
         offsetRectsMayIntersect(rect.transitionBound, viewportTransitionBound),
     );
