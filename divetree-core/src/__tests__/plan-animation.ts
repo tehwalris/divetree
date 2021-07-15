@@ -12,12 +12,12 @@ describe("planAnimation", () => {
     const testCase = parseCase(template);
     const sort: any = (l: number[]) => R.sort((a, b) => a - b, l);
     const actual = planAnimation(testCase.trees.before, testCase.trees.after);
-    const actualSorted = actual.map(e => ({
+    const actualSorted = actual.map((e) => ({
       ...e,
       content: sort(e.content),
     }));
     expect(actual.length).toBe(testCase.assert.length);
-    testCase.assert.forEach(assertion => {
+    testCase.assert.forEach((assertion) => {
       const expectedGroup: AnimationGroup = R.evolve(
         { content: sort },
         assertion,
@@ -330,7 +330,7 @@ function parseTree(raw: string[]): NodeTemplate {
   let last: NodeTemplate | undefined;
   let roots: NodeTemplate[] = [];
   let parents: NodeTemplate[] = [];
-  raw.filter(R.trim).forEach(e => {
+  raw.filter(R.trim).forEach((e) => {
     const [_line, indentStr, kind, idStr] = e.match(
       /^( *)([LST])([1-9]\d*)? *$/,
     )!;
@@ -365,7 +365,7 @@ function nodeFromTemplate(t: NodeTemplate): Node {
       return {
         kind: NodeKind.TightSplit,
         split: Split.SideBySide,
-        children: t.children.map(e => {
+        children: t.children.map((e) => {
           const convertedChild = nodeFromTemplate(e);
           if (convertedChild.kind === NodeKind.Loose) {
             throw new Error("TightSplitNode must have TightNode children");
@@ -404,7 +404,7 @@ function nodeFromTemplate(t: NodeTemplate): Node {
 
 function parseAssertion(s: string): AnimationGroup {
   const enterLeaveMatch = s.match(/^(?:(\d+) (<-|->) )(\d+(?: \d+)*)*$/);
-  const strToList = (s: string) => s.split(" ").map(e => +e);
+  const strToList = (s: string) => s.split(" ").map((e) => +e);
   if (enterLeaveMatch) {
     const [_line, parentStr, arrow, childrenStr] = enterLeaveMatch;
     let parent: number | undefined = +parentStr;

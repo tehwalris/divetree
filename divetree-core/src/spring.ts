@@ -1,11 +1,9 @@
-export type Spring = (
-  args: {
-    position: number;
-    velocity: number;
-    dtMillis: number;
-    target: number;
-  },
-) => { position: number; velocity: number };
+export type Spring = (args: {
+  position: number;
+  velocity: number;
+  dtMillis: number;
+  target: number;
+}) => { position: number; velocity: number };
 
 // Heavily based on the spring implementation in react-motion
 // https://github.com/chenglou/react-motion/blob/master/src/stepper.js

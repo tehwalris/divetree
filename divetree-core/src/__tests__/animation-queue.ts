@@ -25,7 +25,7 @@ describe("AnimationQueue", () => {
   it("doesn't change state if spring doesn't move", () => {
     const spring = jest.fn().mockReturnValue({ position: 2, velocity: 0 });
     const queue = new AnimationQueue(spring, buildInterval, "a");
-    [1000, 0, 9999, 83888].forEach(dt => {
+    [1000, 0, 9999, 83888].forEach((dt) => {
       expect(queue.tick(dt)).toEqual({
         interval: ["a", "a"],
         progress: 1,
@@ -55,7 +55,7 @@ describe("AnimationQueue", () => {
         progress: 1,
         dtMillis: 0,
       },
-    ].forEach(e => {
+    ].forEach((e) => {
       spring.mockReturnValueOnce(e.return);
       expect(queue.tick(e.dtMillis)).toEqual({
         interval: ["a", "a"],

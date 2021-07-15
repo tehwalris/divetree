@@ -64,8 +64,8 @@ export const Rects = ({
 
   return (
     <div style={{ ...styles.treeWrapper, width, height }}>
-      {rects.map(e => {
-        const focus = focuses.find(f => f.id === e.id);
+      {rects.map((e) => {
+        const focus = focuses.find((f) => f.id === e.id);
         let transform = `translate(
           ${toX(e.withoutScaling.offset[0])}px,
           ${toY(e.withoutScaling.offset[1])}px

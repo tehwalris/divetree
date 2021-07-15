@@ -26,7 +26,7 @@ export function unionOffsetRects(rects: OffsetRect[]): OffsetRect {
 export function offsetRectsMayIntersect(a: OffsetRect, b: OffsetRect): boolean {
   const centerDist = vectorLength(subtractVectors(getCenter(a), getCenter(b)));
   const boundingCircleRadiuses = [a, b].map(
-    rect => vectorLength(rect.size) / 2,
+    (rect) => vectorLength(rect.size) / 2,
   );
   return centerDist <= boundingCircleRadiuses.reduce((a, c) => a + c);
 }
@@ -40,5 +40,5 @@ export function subtractVectors(a: number[], b: number[]): number[] {
 }
 
 export function vectorLength(vec: number[]): number {
-  return Math.sqrt(vec.map(v => v ** 2).reduce((a, c) => a + c));
+  return Math.sqrt(vec.map((v) => v ** 2).reduce((a, c) => a + c));
 }

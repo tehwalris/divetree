@@ -41,7 +41,7 @@ export function makeInterpolator(
   animation: AnimationGroup,
 ): Interpolator {
   if (animation.kind === AnimationKind.Transform) {
-    const transitionBounds = animation.content.map(id => {
+    const transitionBounds = animation.content.map((id) => {
       const b = before.get(id);
       const a = after.get(id);
       if (!b || !a) {
@@ -49,7 +49,7 @@ export function makeInterpolator(
       }
       return unionOffsetRects([a, b]);
     });
-    return t =>
+    return (t) =>
       animation.content
         .map((id, i) => {
           const b = before.get(id);
@@ -70,65 +70,67 @@ export function makeInterpolator(
             transitionBound: transitionBounds[i],
           };
         })
-        .filter(v => v)
-        .map(v => v!);
+        .filter((v) => v)
+        .map((v) => v!);
   }
-  const genericEnterLeave = (
-    target: Map<Id, Node>,
-    _lifecycle: (t: number) => number,
-    _finalMix: (t: number) => number,
-  ): Interpolator => t => {
-    const lifecycle = _lifecycle(t);
-    const finalMix = _finalMix(t);
-    const _origin =
-      animation.parent !== undefined &&
-      mixVector(
-        getCenterLeft(before.get(animation.parent)!),
-        getCenterLeft(after.get(animation.parent)!),
-        t,
-      );
-    return animation.content
-      .map(id => {
-        const e = target.get(id);
-        if (!e) {
-          // TODO this is only necessary while refactoring
-          // change to a throw later
-          console.warn("missing node", id);
-          return undefined;
-        }
-        const origin = _origin || getCenterLeft(e);
-        return {
-          id,
-          lifecycle,
-          withoutScaling: {
-            size: e.size,
-            offset: e.offset,
-          },
-          withScaling: {
-            precomputed: {
-              size: mixVector([0, 0], e.size, finalMix),
-              offset: mixVector(origin, e.offset, finalMix),
+  const genericEnterLeave =
+    (
+      target: Map<Id, Node>,
+      _lifecycle: (t: number) => number,
+      _finalMix: (t: number) => number,
+    ): Interpolator =>
+    (t) => {
+      const lifecycle = _lifecycle(t);
+      const finalMix = _finalMix(t);
+      const _origin =
+        animation.parent !== undefined &&
+        mixVector(
+          getCenterLeft(before.get(animation.parent)!),
+          getCenterLeft(after.get(animation.parent)!),
+          t,
+        );
+      return animation.content
+        .map((id) => {
+          const e = target.get(id);
+          if (!e) {
+            // TODO this is only necessary while refactoring
+            // change to a throw later
+            console.warn("missing node", id);
+            return undefined;
+          }
+          const origin = _origin || getCenterLeft(e);
+          return {
+            id,
+            lifecycle,
+            withoutScaling: {
+              size: e.size,
+              offset: e.offset,
             },
-            info: {
-              scale: finalMix,
-              origin: origin,
+            withScaling: {
+              precomputed: {
+                size: mixVector([0, 0], e.size, finalMix),
+                offset: mixVector(origin, e.offset, finalMix),
+              },
+              info: {
+                scale: finalMix,
+                origin: origin,
+              },
             },
-          },
-        };
-      })
-      .filter(v => v)
-      .map(v => v!);
-  };
+          };
+        })
+        .filter((v) => v)
+        .map((v) => v!);
+    };
   return animation.kind === AnimationKind.Enter
     ? genericEnterLeave(
         after,
-        t => t - 1,
-        t => t,
+        (t) => t - 1,
+        (t) => t,
       )
     : genericEnterLeave(
         before,
-        t => t,
-        t => 1 - t,
+        (t) => t,
+        (t) => 1 - t,
       );
 }
 

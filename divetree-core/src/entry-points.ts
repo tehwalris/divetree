@@ -39,10 +39,10 @@ export function doLayoutAnimated(
   const beforeRects = _doLayoutNew(before, config);
   const afterRects = _doLayoutNew(after, config);
   const animationGroups = planAnimation(before, after);
-  const interpolators = animationGroups.map(e =>
+  const interpolators = animationGroups.map((e) =>
     makeInterpolator(beforeRects, afterRects, e),
   );
-  return t => R.chain(e => e(t), interpolators);
+  return (t) => R.chain((e) => e(t), interpolators);
 }
 
 function toWorkingTree(
@@ -56,7 +56,7 @@ function toWorkingTree(
         size: node.size,
         paddingRight: 0,
         data: node,
-        getOutput: v => [
+        getOutput: (v) => [
           {
             id: node.id,
             visible: true,
@@ -73,8 +73,8 @@ function toWorkingTree(
         size,
         paddingRight: 0,
         data: node,
-        getOutput: v =>
-          layout.map(e => ({
+        getOutput: (v) =>
+          layout.map((e) => ({
             ...e,
             offset: [e.offset[0] + v.x, e.offset[1] + v.y],
           })),
@@ -92,7 +92,7 @@ function toWorkingTree(
       const self: TreeNode<WorkingNodeA> = {
         ...base,
         paddingRight,
-        getOutput: v => [
+        getOutput: (v) => [
           ...base.getOutput(v),
           {
             id: node.id,
@@ -105,7 +105,7 @@ function toWorkingTree(
       if (self.children.length) {
         throw new Error("unexpected children created by LooseNode.parent");
       }
-      self.children = node.children.map(c => toWorkingTree(config, c, self));
+      self.children = node.children.map((c) => toWorkingTree(config, c, self));
       return self;
     default:
       return unreachable(node);
@@ -143,10 +143,10 @@ function calculateExtents(
     extents: undefined as any,
     outerSize: [],
   };
-  self.children = node.children.map(c => calculateExtents(c, self));
+  self.children = node.children.map((c) => calculateExtents(c, self));
   self.extents = outerExtents([
     selfExtents,
-    ...self.children.map(v => v.extents),
+    ...self.children.map((v) => v.extents),
   ]);
   self.outerSize = [
     self.extents.right - self.extents.left,
@@ -157,7 +157,7 @@ function calculateExtents(
 
 function visitTree<T>(node: TreeNode<T>, cb: (node: T) => void): void {
   cb(node);
-  node.children.forEach(c => visitTree(c, cb));
+  node.children.forEach((c) => visitTree(c, cb));
 }
 
 function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
@@ -172,12 +172,12 @@ function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
   });
 
   const treeA = toWorkingTree(config, root, undefined);
-  visitTree(treeA, node => {
+  visitTree(treeA, (node) => {
     node.size = R.reverse(node.size);
     node.size[1] += node.paddingRight;
   });
   const treeB: TreeNode<WorkingNodeB> = layout(treeA);
-  visitTree(treeB, node => {
+  visitTree(treeB, (node) => {
     node.size = R.reverse(node.size);
     node.size[0] -= node.paddingRight;
     const { x, y } = node;
@@ -187,8 +187,8 @@ function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
   const treeC = calculateExtents(treeB, undefined);
 
   const out = new Map<Id, PublicOutputNode>();
-  visitTree(treeC, workingNode => {
-    workingNode.getOutput(workingNode).forEach(outputNode => {
+  visitTree(treeC, (workingNode) => {
+    workingNode.getOutput(workingNode).forEach((outputNode) => {
       out.set(outputNode.id, outputNode);
     });
   });

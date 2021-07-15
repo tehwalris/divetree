@@ -100,7 +100,7 @@ export class EquationEditor extends React.Component<{}, State> {
         getDisplayTree={this.getDisplayTree}
         getContent={this.getContent}
         focusedIdPath={this.state.index.get(this.state.focusedId)?.idPath || []}
-        onFocusedIdChange={focusedId => this.setState({ focusedId })}
+        onFocusedIdChange={(focusedId) => this.setState({ focusedId })}
         onKeyDown={this.onKeyDown}
       />
     );
@@ -136,7 +136,7 @@ export class EquationEditor extends React.Component<{}, State> {
       this.setExpression(wrapAt(this.state.expression, focusedId, wrap));
     switch (event.key) {
       case "a": {
-        setWrapped(node => ({
+        setWrapped((node) => ({
           id: "" + Math.random(),
           kind: ExpressionKind.BinaryExpression,
           operation: Operation.Add,
@@ -149,7 +149,7 @@ export class EquationEditor extends React.Component<{}, State> {
         return false;
       }
       case "m": {
-        setWrapped(node => ({
+        setWrapped((node) => ({
           id: "" + Math.random(),
           kind: ExpressionKind.BinaryExpression,
           operation: Operation.Multiply,
@@ -163,7 +163,7 @@ export class EquationEditor extends React.Component<{}, State> {
       }
       case "s": {
         this.setExpression(
-          map(this.state.expression, e => {
+          map(this.state.expression, (e) => {
             if (
               e.id === focusedId &&
               (e.kind === ExpressionKind.NumericLiteral ||
@@ -240,7 +240,7 @@ function buildIndex(
   const idPath = [...parentIdPath, node.id];
   _index.set(node.id, { idPath, node: node });
   if (node.kind === ExpressionKind.BinaryExpression) {
-    [node.left, node.right].forEach(c => buildIndex(c, _index, idPath));
+    [node.left, node.right].forEach((c) => buildIndex(c, _index, idPath));
   }
   return _index;
 }
@@ -305,7 +305,7 @@ function toDisplayTree(
     kind: NodeKind.Loose,
     id: `${node.id}-loose`,
     parent: base,
-    children: children.map(c => {
+    children: children.map((c) => {
       return toDisplayTree(
         c,
         isOnPath ? path.slice(1) : [],

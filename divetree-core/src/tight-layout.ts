@@ -6,9 +6,10 @@ type SizeTree = {
   children: SizeTree[];
 };
 
-export function layoutTight(
-  node: TightNode,
-): { layout: PublicOutputNode[]; size: number[] } {
+export function layoutTight(node: TightNode): {
+  layout: PublicOutputNode[];
+  size: number[];
+} {
   const minSizeTree = calculateMinSize(node);
   return {
     layout: layoutTightSplitToFill(node, minSizeTree, minSizeTree.size, [0, 0]),
@@ -32,14 +33,14 @@ function calculateMinSize(node: TightNode): SizeTree {
   if (node.kind === NodeKind.TightLeaf) {
     return { size: node.size, children: [] };
   }
-  const childSizeTrees = node.children.map(c => calculateMinSize(c));
+  const childSizeTrees = node.children.map((c) => calculateMinSize(c));
   const { maxDim, sumDim } = getAggregationPerDimension(node.split);
   const combinedSize = [0, 0];
   combinedSize[maxDim] = childSizeTrees
-    .map(c => c.size[maxDim])
+    .map((c) => c.size[maxDim])
     .reduce((a, c) => Math.max(a, c), 0);
   combinedSize[sumDim] = childSizeTrees
-    .map(c => c.size[sumDim])
+    .map((c) => c.size[sumDim])
     .reduce((a, c) => a + c, 0);
   return { size: combinedSize, children: childSizeTrees };
 }
@@ -63,7 +64,7 @@ function layoutTightSplitToFill(
   const { sumDim } = getAggregationPerDimension(node.split);
   const extraTotalOnSumDim =
     fillSize[sumDim] -
-    minSizeTree.children.map(c => c.size[sumDim]).reduce((a, c) => a + c, 0);
+    minSizeTree.children.map((c) => c.size[sumDim]).reduce((a, c) => a + c, 0);
   const usualExtraPerNodeOnSumDim = Math.floor(
     extraTotalOnSumDim / node.children.length,
   );

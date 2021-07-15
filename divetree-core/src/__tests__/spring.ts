@@ -15,7 +15,7 @@ describe("spring", () => {
       { t: 2, s: [126, 175], v: [30, 80] },
       { t: 10, s: [98, 102], v: [-5, 5] },
       { t: 100, s: [100, 100], v: [0, 0] },
-    ].forEach(e => {
+    ].forEach((e) => {
       const out = spring({
         dtMillis: e.t * 1000,
         position: 250,

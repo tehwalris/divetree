@@ -8,7 +8,7 @@ function setup(): { [K in "before" | "after"]: Map<Id, PublicOutputNode> } {
   const makeOutputNodes = (
     list: PublicOutputNode[],
   ): Map<Id, PublicOutputNode> =>
-    new Map(list.map(e => [e.id, e] as [Id, PublicOutputNode]));
+    new Map(list.map((e) => [e.id, e] as [Id, PublicOutputNode]));
   return {
     before: makeOutputNodes([
       {
@@ -59,8 +59,8 @@ function templatedTest(animation: AnimationGroup, expected: DrawRect[]) {
     const interpolator = makeInterpolator(before, after, animation);
     const actual = interpolator(0.25);
     expect(actual.length).toBe(expected.length);
-    expected.forEach(a => {
-      expect(actual.find(b => drawRectEqualEnough(a, b))).toBeTruthy();
+    expected.forEach((a) => {
+      expect(actual.find((b) => drawRectEqualEnough(a, b))).toBeTruthy();
     });
   };
 }

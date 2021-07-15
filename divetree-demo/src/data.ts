@@ -86,16 +86,18 @@ trees.push({
           },
           children: [],
         },
-        ...[0, 1, 2].map((i: number): LooseNode => ({
-          kind: NodeKind.Loose,
-          id: `${i}-loose`,
-          parent: {
-            kind: NodeKind.TightLeaf,
-            id: `condition-${i}`,
-            size: [160, 50],
-          },
-          children: [],
-        })),
+        ...[0, 1, 2].map(
+          (i: number): LooseNode => ({
+            kind: NodeKind.Loose,
+            id: `${i}-loose`,
+            parent: {
+              kind: NodeKind.TightLeaf,
+              id: `condition-${i}`,
+              size: [160, 50],
+            },
+            children: [],
+          }),
+        ),
       ],
     },
   ],
@@ -140,22 +142,24 @@ trees.push({
             },
           ],
         },
-        ...[0, 1, 2].map((i: number): LooseNode => ({
-          kind: NodeKind.Loose,
-          id: `${i}-loose`,
-          parent: {
-            kind: NodeKind.TightLeaf,
-            id: `condition-${i}`,
-            size: [160, 50],
-          },
-          children: [
-            {
+        ...[0, 1, 2].map(
+          (i: number): LooseNode => ({
+            kind: NodeKind.Loose,
+            id: `${i}-loose`,
+            parent: {
               kind: NodeKind.TightLeaf,
-              id: `print-${i}`,
-              size: [150, 50],
+              id: `condition-${i}`,
+              size: [160, 50],
             },
-          ],
-        })),
+            children: [
+              {
+                kind: NodeKind.TightLeaf,
+                id: `print-${i}`,
+                size: [150, 50],
+              },
+            ],
+          }),
+        ),
       ],
     },
   ],
@@ -200,22 +204,24 @@ trees.push({
             },
           ],
         },
-        ...[0, 1, 2, 3].map((i: number): LooseNode => ({
-          kind: NodeKind.Loose,
-          id: `${i}-loose`,
-          parent: {
-            kind: NodeKind.TightLeaf,
-            id: `condition-${i}`,
-            size: [160, 50],
-          },
-          children: [
-            {
+        ...[0, 1, 2, 3].map(
+          (i: number): LooseNode => ({
+            kind: NodeKind.Loose,
+            id: `${i}-loose`,
+            parent: {
               kind: NodeKind.TightLeaf,
-              id: `print-${i}`,
-              size: [150, 50],
+              id: `condition-${i}`,
+              size: [160, 50],
             },
-          ],
-        })),
+            children: [
+              {
+                kind: NodeKind.TightLeaf,
+                id: `print-${i}`,
+                size: [150, 50],
+              },
+            ],
+          }),
+        ),
       ],
     },
   ],

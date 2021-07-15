@@ -121,7 +121,7 @@ export function planAnimation(before: Node, after: Node): AnimationGroup[] {
     const tightById = indexTreeNodesById(tree, NodeKind.TightLeaf);
     const changingByParent = new Map<Id | undefined, Id[]>();
 
-    R.difference(tightIdsOwn, [...ids.tight.common]).forEach(id => {
+    R.difference(tightIdsOwn, [...ids.tight.common]).forEach((id) => {
       let cur = tightById.get(id);
       while (
         cur &&

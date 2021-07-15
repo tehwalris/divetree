@@ -139,8 +139,8 @@ describe("layoutTight", () => {
   for (const c of cases) {
     test(c.label, () => {
       const actual = layoutTight(c.node);
-      expect(sortBy(actual.layout, e => e.id)).toEqual(
-        sortBy(c.layout, e => e.id),
+      expect(sortBy(actual.layout, (e) => e.id)).toEqual(
+        sortBy(c.layout, (e) => e.id),
       );
       expect(actual.size).toEqual(c.size);
     });
