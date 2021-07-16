@@ -134,16 +134,19 @@ function layoutPortals(
 } {
   const layoutsByPortalId = new Map<Id, Map<Id, PublicOutputNode>>();
 
+  function extentsFromPortalLayout(layout: Map<Id, PublicOutputNode>): Extents {
+    return outerExtents(
+      [...layout.values()].map((n) => extentsFromSizeOffset(n)),
+    );
+  }
+
   function extractPortal(portalNode: PortalNode): PureTightNode {
     const layout = _doLayoutNew(portalNode.child, config);
     layoutsByPortalId.set(portalNode.id, layout);
-    const extents = outerExtents(
-      [...layout.values()].map((n) => extentsFromSizeOffset(n)),
-    );
     return {
       kind: NodeKind.TightLeaf,
       id: portalNode.id,
-      size: sizeOffsetFromExtents(extents).size,
+      size: sizeOffsetFromExtents(extentsFromPortalLayout(layout)).size,
     };
   }
 
@@ -168,8 +171,27 @@ function layoutPortals(
     withPortalChildren: (
       pureTightLayout: PublicOutputNode[],
     ): PublicOutputNode[] => {
-      // TODO
-      return pureTightLayout;
+      const mergedLayout: PublicOutputNode[] = [];
+      for (const pureTightOutputNode of pureTightLayout) {
+        const portalLayout = layoutsByPortalId.get(pureTightOutputNode.id);
+        if (!portalLayout) {
+          mergedLayout.push(pureTightOutputNode);
+          continue;
+        }
+        const portalChildOffset = sizeOffsetFromExtents(
+          extentsFromPortalLayout(portalLayout),
+        ).offset;
+        for (const portalOutputNode of portalLayout.values()) {
+          mergedLayout.push({
+            ...portalOutputNode,
+            offset: portalOutputNode.offset.map(
+              (v, i) =>
+                v + pureTightOutputNode.offset[i] - portalChildOffset[i],
+            ),
+          });
+        }
+      }
+      return mergedLayout;
     },
   };
 }
@@ -200,6 +222,9 @@ function sizeOffsetFromExtents({ top, right, bottom, left }: Extents): {
 }
 
 function outerExtents(set: Extents[]): Extents {
+  if (!set.length) {
+    throw new Error("can not get extents of empty set");
+  }
   return set.reduce(
     (a, c) => ({
       top: Math.min(a.top, c.top),
