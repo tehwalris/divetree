@@ -1,6 +1,6 @@
 import * as React from "react";
 import {
-  Node as DivetreeNode,
+  RootNode as DivetreeNode,
   NodeKind,
   Split,
   TightLeafNode,

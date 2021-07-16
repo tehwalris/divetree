@@ -1,7 +1,7 @@
-import { PublicOutputNode } from "./interfaces/output";
-import { Node, Id, NodeKind } from "./interfaces/input";
-import * as crawl from "tree-crawl";
 import * as R from "ramda";
+import * as crawl from "tree-crawl";
+import { Id, Node, NodeKind, RootNode } from "./interfaces/input";
+import { unreachable } from "./unreachable";
 
 export enum AnimationKind {
   Transform,
@@ -36,6 +36,10 @@ function getChildren(node: Node): Node[] {
       return node.children;
     case NodeKind.TightLeaf:
       return [];
+    case NodeKind.Portal:
+      return [node.child];
+    default:
+      return unreachable(node);
   }
 }
 
@@ -78,8 +82,8 @@ function indexTreeParentsByChildren(root: Node): Map<Node, Node> {
 }
 
 function loadIdGroup(
-  beforeRoot: Node,
-  afterRoot: Node,
+  beforeRoot: RootNode,
+  afterRoot: RootNode,
   kind: NodeKind.TightLeaf | NodeKind.Loose,
 ): IdGroup {
   const before = treeToIds(beforeRoot, kind);
@@ -91,7 +95,10 @@ function loadIdGroup(
   };
 }
 
-export function planAnimation(before: Node, after: Node): AnimationGroup[] {
+export function planAnimation(
+  before: RootNode,
+  after: RootNode,
+): AnimationGroup[] {
   const animationGroups: AnimationGroup[] = [];
   const ids = {
     tight: loadIdGroup(before, after, NodeKind.TightLeaf),

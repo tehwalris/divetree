@@ -1,12 +1,13 @@
-import { TightNode, NodeKind, Split } from "../interfaces/input";
-import { PublicOutputNode } from "../interfaces/output";
-import { layoutTight } from "../tight-layout";
 import { sortBy } from "lodash";
+import { NodeKind, Split } from "../interfaces/input";
+import { PublicOutputNode } from "../interfaces/output";
+import { PureTightNode } from "../interfaces/working";
+import { layoutTight } from "../tight-layout";
 
 describe("layoutTight", () => {
   interface Case {
     label: string;
-    node: TightNode;
+    node: PureTightNode;
     layout: PublicOutputNode[];
     size: number[];
   }

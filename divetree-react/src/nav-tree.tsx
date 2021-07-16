@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import {
-  Node as DivetreeNode,
+  RootNode as DivetreeNode,
   NavNode,
   NavIndex,
   NavIndexNode,

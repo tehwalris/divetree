@@ -1,6 +1,6 @@
 import "jest";
 import * as R from "ramda";
-import { Node, LooseNode, NodeKind, Split } from "../interfaces/input";
+import { RootNode, NodeKind, Split } from "../interfaces/input";
 import {
   AnimationKind,
   planAnimation,
@@ -292,8 +292,8 @@ interface Case {
 }
 
 interface TreePair {
-  before: Node;
-  after: Node;
+  before: RootNode;
+  after: RootNode;
 }
 
 interface NodeTemplate {
@@ -356,7 +356,7 @@ function parseTree(raw: string[]): NodeTemplate {
   return roots[0];
 }
 
-function nodeFromTemplate(t: NodeTemplate): Node {
+function nodeFromTemplate(t: NodeTemplate): RootNode {
   if ((t.id === 0) !== (t.kind === "S")) {
     throw new Error("only S-nodes can (and must) omit ID");
   }

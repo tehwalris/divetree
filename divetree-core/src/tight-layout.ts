@@ -1,12 +1,13 @@
-import { NodeKind, Split, TightNode } from "./interfaces/input";
+import { NodeKind, Split } from "./interfaces/input";
 import { PublicOutputNode } from "./interfaces/output";
+import { PureTightNode } from "./interfaces/working";
 
 type SizeTree = {
   size: number[];
   children: SizeTree[];
 };
 
-export function layoutTight(node: TightNode): {
+export function layoutTight(node: PureTightNode): {
   layout: PublicOutputNode[];
   size: number[];
 } {
@@ -29,7 +30,7 @@ function getAggregationPerDimension(split: Split) {
       };
 }
 
-function calculateMinSize(node: TightNode): SizeTree {
+function calculateMinSize(node: PureTightNode): SizeTree {
   if (node.kind === NodeKind.TightLeaf) {
     return { size: node.size, children: [] };
   }
@@ -46,7 +47,7 @@ function calculateMinSize(node: TightNode): SizeTree {
 }
 
 function layoutTightSplitToFill(
-  node: TightNode,
+  node: PureTightNode,
   minSizeTree: SizeTree,
   fillSize: number[],
   offset: number[],

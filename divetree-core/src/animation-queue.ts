@@ -1,4 +1,3 @@
-import { Node } from "./interfaces/input";
 import { Spring } from "./spring";
 
 export class AnimationQueue<T, I> {

@@ -4,7 +4,7 @@ import {
   createSpring,
   DrawRect,
   AnimationQueue,
-  Node as DivetreeNode,
+  RootNode as DivetreeNode,
   Interpolator,
   LayoutConfig,
   doLayout,

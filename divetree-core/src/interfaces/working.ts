@@ -1,4 +1,4 @@
-import { Node } from "./input";
+import { RootNode, TightLeafNode, TightSplitNode } from "./input";
 import { PublicOutputNode } from "./output";
 
 export type TreeNode<T> = T & {
@@ -9,7 +9,7 @@ export type TreeNode<T> = T & {
 export interface WorkingNodeA {
   size: number[];
   paddingRight: number;
-  data: Node;
+  data: RootNode;
   getOutput: (v: WorkingNodeC) => PublicOutputNode[];
 }
 
@@ -29,3 +29,9 @@ export interface Extents {
   bottom: number;
   left: number;
 }
+
+export type PureTightNode = PureTightSplitNode | TightLeafNode;
+
+export type PureTightSplitNode = Omit<TightSplitNode, "children"> & {
+  children: PureTightNode[];
+};

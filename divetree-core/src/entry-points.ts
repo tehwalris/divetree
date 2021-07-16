@@ -1,9 +1,16 @@
 import { flextree } from "d3-flextree";
 import * as R from "ramda";
-import { Id, Node, NodeKind } from "./interfaces/input";
+import {
+  Id,
+  RootNode,
+  NodeKind,
+  PortalNode,
+  TightNode,
+} from "./interfaces/input";
 import { InternalOutputNode, PublicOutputNode } from "./interfaces/output";
 import {
   Extents,
+  PureTightNode,
   TreeNode,
   WorkingNodeA,
   WorkingNodeB,
@@ -12,6 +19,7 @@ import {
 import { Interpolator, makeInterpolator } from "./interpolate";
 import { planAnimation } from "./plan-animation";
 import { layoutTight } from "./tight-layout";
+import { unreachable } from "./unreachable";
 
 export interface Config {
   // TODO some of these might not be used any more
@@ -27,13 +35,13 @@ export interface Config {
   };
 }
 
-export function doLayout(root: Node, config: Config): InternalOutputNode[] {
+export function doLayout(root: RootNode, config: Config): InternalOutputNode[] {
   return [..._doLayoutNew(root, config).values()];
 }
 
 export function doLayoutAnimated(
-  before: Node,
-  after: Node,
+  before: RootNode,
+  after: RootNode,
   config: Config,
 ): Interpolator {
   const beforeRects = _doLayoutNew(before, config);
@@ -47,7 +55,7 @@ export function doLayoutAnimated(
 
 function toWorkingTree(
   config: Config,
-  node: Node,
+  node: RootNode,
   parent: TreeNode<WorkingNodeA> | undefined,
 ): TreeNode<WorkingNodeA> {
   switch (node.kind) {
@@ -68,16 +76,19 @@ function toWorkingTree(
         parent,
       };
     case NodeKind.TightSplit:
-      const { layout, size } = layoutTight(node);
+      const { pureTightNode, withPortalChildren } = layoutPortals(node, config);
+      const { layout, size } = layoutTight(pureTightNode);
       return {
         size,
         paddingRight: 0,
         data: node,
         getOutput: (v) =>
-          layout.map((e) => ({
-            ...e,
-            offset: [e.offset[0] + v.x, e.offset[1] + v.y],
-          })),
+          withPortalChildren(
+            layout.map((e) => ({
+              ...e,
+              offset: [e.offset[0] + v.x, e.offset[1] + v.y],
+            })),
+          ),
         children: [],
         parent,
       };
@@ -110,6 +121,82 @@ function toWorkingTree(
     default:
       return unreachable(node);
   }
+}
+
+function layoutPortals(
+  node: TightNode,
+  config: Config,
+): {
+  pureTightNode: PureTightNode;
+  withPortalChildren: (
+    pureTightLayout: PublicOutputNode[],
+  ) => PublicOutputNode[];
+} {
+  const layoutsByPortalId = new Map<Id, Map<Id, PublicOutputNode>>();
+
+  function extractPortal(portalNode: PortalNode): PureTightNode {
+    const layout = _doLayoutNew(portalNode.child, config);
+    layoutsByPortalId.set(portalNode.id, layout);
+    const extents = outerExtents(
+      [...layout.values()].map((n) => extentsFromSizeOffset(n)),
+    );
+    return {
+      kind: NodeKind.TightLeaf,
+      id: portalNode.id,
+      size: sizeOffsetFromExtents(extents).size,
+    };
+  }
+
+  function extractAllPortals(node: TightNode | PortalNode): PureTightNode {
+    switch (node.kind) {
+      case NodeKind.TightLeaf:
+        return node;
+      case NodeKind.TightSplit:
+        return {
+          ...node,
+          children: node.children.map((c) => extractAllPortals(c)),
+        };
+      case NodeKind.Portal:
+        return extractPortal(node);
+      default:
+        return unreachable(node);
+    }
+  }
+
+  return {
+    pureTightNode: extractAllPortals(node),
+    withPortalChildren: (
+      pureTightLayout: PublicOutputNode[],
+    ): PublicOutputNode[] => {
+      // TODO
+      return pureTightLayout;
+    },
+  };
+}
+
+function extentsFromSizeOffset({
+  size,
+  offset,
+}: {
+  size: number[];
+  offset: number[];
+}): Extents {
+  return {
+    top: offset[1],
+    right: offset[0] + size[0],
+    bottom: offset[1] + size[1],
+    left: offset[0],
+  };
+}
+
+function sizeOffsetFromExtents({ top, right, bottom, left }: Extents): {
+  size: number[];
+  offset: number[];
+} {
+  return {
+    size: [right - left, bottom - top],
+    offset: [left, top],
+  };
 }
 
 function outerExtents(set: Extents[]): Extents {
@@ -160,7 +247,10 @@ function visitTree<T>(node: TreeNode<T>, cb: (node: T) => void): void {
   node.children.forEach((c) => visitTree(c, cb));
 }
 
-function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
+function _doLayoutNew(
+  root: RootNode,
+  config: Config,
+): Map<Id, PublicOutputNode> {
   const layout = flextree({
     nodeSize: (node: TreeNode<WorkingNodeA>): number[] => node.size,
     spacing: (a: TreeNode<WorkingNodeA>, b: TreeNode<WorkingNodeA>): number => {
@@ -193,9 +283,4 @@ function _doLayoutNew(root: Node, config: Config): Map<Id, PublicOutputNode> {
     });
   });
   return out;
-}
-
-function unreachable(v: never): never {
-  console.error("unreachable", v);
-  throw new Error("unreachable");
 }
