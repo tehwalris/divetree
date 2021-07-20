@@ -36,13 +36,24 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 };
 
+function padColor(color: number[]): number[] {
+  if (color.length === 4) {
+    return color;
+  } else if (color.length === 3) {
+    return [...color, 1];
+  } else {
+    throw new Error(`invalid color format (length ${color.length})`);
+  }
+}
+
 function getFocusColor(progress: number, id: Id, getStyle: GetStyle): string {
-  const a = getStyle(id, false).color;
-  const b = getStyle(id, true).color;
-  const mixed = a
-    .map((e, i) => e * (1 - progress) + b[i] * progress)
-    .map(Math.floor);
-  return `rgb(${mixed.join(", ")})`;
+  const a = padColor(getStyle(id, false).color);
+  const b = padColor(getStyle(id, true).color);
+  const mixed = a.map((e, i) => e * (1 - progress) + b[i] * progress);
+  for (let i = 0; i < 3; i++) {
+    mixed[i] = Math.floor(mixed[i]);
+  }
+  return `rgba(${mixed.join(", ")})`;
 }
 
 const DPR = window.devicePixelRatio;
