@@ -93,8 +93,8 @@ export const Rects = ({
 }: Props) => {
   // Round to actual display pixels
   const roundPixel = (v: number) => Math.round(v * DPR) * DPRI;
-  const toX = (v: number) => roundPixel(v + offset[0] + width / 2);
-  const toY = (v: number) => roundPixel(v + offset[1] + height / 2);
+  const toX = (v: number) => roundPixel(v + offset[0] + width / 3);
+  const toY = (v: number) => roundPixel(v + offset[1] + height / 3);
 
   return (
     <div style={{ ...styles.treeWrapper, width, height }}>

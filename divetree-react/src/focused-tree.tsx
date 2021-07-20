@@ -192,13 +192,13 @@ export class FocusedTree extends React.Component<Props, State> {
 
   render() {
     const { rects, offset, focusTarget, lastFocusTarget } = this.state;
-    const viewport = { width: 800, height: 600 };
+    const viewport = { width: 1000, height: 650 };
     const viewportTransitionBound = unionOffsetRects(
       [focusTarget, lastFocusTarget].map((target) => ({
         size: [viewport.width, viewport.height],
         offset: [
-          target[0] - viewport.width / 2,
-          target[1] - viewport.height / 2,
+          target[0] - viewport.width / 3,
+          target[1] - viewport.height / 3,
         ],
       })),
     );
