@@ -66,9 +66,9 @@ function layoutTightSplitToFill(
   const extraTotalOnSumDim =
     fillSize[sumDim] -
     minSizeTree.children.map((c) => c.size[sumDim]).reduce((a, c) => a + c, 0);
-  const usualExtraPerNodeOnSumDim = Math.floor(
-    extraTotalOnSumDim / node.children.length,
-  );
+  const usualExtraPerNodeOnSumDim = node.growLast
+    ? 0
+    : Math.floor(extraTotalOnSumDim / node.children.length);
   let currentOffset = offset;
   const out = [];
   for (let i = 0; i < node.children.length; i++) {

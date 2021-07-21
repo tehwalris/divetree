@@ -112,6 +112,32 @@ describe("layoutTight", () => {
       size: [75, 45],
     },
     {
+      label:
+        "stacked split inside side-by-side split with unequal sizes (growLast = true)",
+      node: {
+        kind: NodeKind.TightSplit,
+        split: Split.SideBySide,
+        children: [
+          { kind: NodeKind.TightLeaf, id: "a", size: [30, 105] },
+          {
+            kind: NodeKind.TightSplit,
+            split: Split.Stacked,
+            growLast: true,
+            children: [
+              { kind: NodeKind.TightLeaf, id: "b-a", size: [45, 20] },
+              { kind: NodeKind.TightLeaf, id: "b-b", size: [40, 25] },
+            ],
+          },
+        ],
+      },
+      layout: [
+        { id: "a", visible: true, size: [30, 105], offset: [0, 0] },
+        { id: "b-a", visible: true, size: [45, 20], offset: [30, 0] },
+        { id: "b-b", visible: true, size: [45, 85], offset: [30, 20] },
+      ],
+      size: [75, 105],
+    },
+    {
       label: "non-integer sizes when stretching split",
       node: {
         kind: NodeKind.TightSplit,

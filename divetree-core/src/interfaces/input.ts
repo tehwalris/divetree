@@ -26,6 +26,7 @@ export enum Split {
 export interface TightSplitNode {
   kind: NodeKind.TightSplit;
   split: Split;
+  growLast?: boolean;
   children: (TightNode | PortalNode)[];
 }
 
