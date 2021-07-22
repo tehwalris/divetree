@@ -161,6 +161,46 @@ describe("layoutTight", () => {
       ],
       size: [75, 100],
     },
+    {
+      label: "split with two overlaid leaves of equal size",
+      node: {
+        kind: NodeKind.TightSplit,
+        split: Split.Overlaid,
+        children: [
+          { kind: NodeKind.TightLeaf, id: "a", size: [40, 30] },
+          { kind: NodeKind.TightLeaf, id: "b", size: [40, 30] },
+        ],
+      },
+      layout: [
+        { id: "a", visible: true, size: [40, 30], offset: [0, 0] },
+        { id: "b", visible: true, size: [40, 30], offset: [0, 0] },
+      ],
+      size: [40, 30],
+    },
+    {
+      label: "overlaid split inside side-by-side split with unequal sizes",
+      node: {
+        kind: NodeKind.TightSplit,
+        split: Split.SideBySide,
+        children: [
+          { kind: NodeKind.TightLeaf, id: "a", size: [30, 105] },
+          {
+            kind: NodeKind.TightSplit,
+            split: Split.Overlaid,
+            children: [
+              { kind: NodeKind.TightLeaf, id: "b-a", size: [45, 20] },
+              { kind: NodeKind.TightLeaf, id: "b-b", size: [40, 25] },
+            ],
+          },
+        ],
+      },
+      layout: [
+        { id: "a", visible: true, size: [30, 105], offset: [0, 0] },
+        { id: "b-a", visible: true, size: [45, 105], offset: [30, 0] },
+        { id: "b-b", visible: true, size: [45, 105], offset: [30, 0] },
+      ],
+      size: [75, 105],
+    },
   ];
 
   for (const c of cases) {

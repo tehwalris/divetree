@@ -21,6 +21,7 @@ export type Node = RootNode | PortalNode;
 export enum Split {
   Stacked,
   SideBySide,
+  Overlaid,
 }
 
 export interface TightSplitNode {
