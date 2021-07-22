@@ -18,6 +18,7 @@ interface Props {
   onFocusedIdChange: (id: string) => void;
   disableNav?: boolean;
   onKeyDown?: (event: KeyboardEvent, focusedId: string) => boolean | undefined;
+  onKeyUp?: (event: KeyboardEvent, focusedId: string) => void;
 }
 
 export const NavTree: React.FC<Props> = ({
@@ -29,6 +30,7 @@ export const NavTree: React.FC<Props> = ({
   onFocusedIdChange,
   disableNav,
   onKeyDown,
+  onKeyUp,
 }) => {
   // TODO The will currently keep growing with no limit
   const lastVisitedChildren = useRef(new Map<string, string>());
@@ -88,9 +90,14 @@ export const NavTree: React.FC<Props> = ({
         }
       }
     };
+    const onKeyUpInner = (e: KeyboardEvent) => {
+      onKeyUp?.(e, focusedNavNode.original.id);
+    };
     document.addEventListener("keydown", onKeyDownInner);
+    document.addEventListener("keyup", onKeyUpInner);
     return () => {
       document.removeEventListener("keydown", onKeyDownInner);
+      document.removeEventListener("keyup", onKeyUpInner);
     };
   });
 
