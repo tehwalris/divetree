@@ -7,6 +7,7 @@ export type GetContent = (id: Id) => React.ReactElement<unknown> | null;
 export interface RectStyle {
   color: number[];
   borderColor: number[];
+  extra?: React.CSSProperties;
 }
 
 export type GetStyle = (id: Id, focused: boolean) => RectStyle;
@@ -133,6 +134,7 @@ export const Rects = ({
                 e.id,
                 getStyle || DEFAULT_GET_STYLE,
               ),
+              ...(getStyle || DEFAULT_GET_STYLE)(e.id, !!focus).extra,
             }}
           >
             {getContent(e.id)}
