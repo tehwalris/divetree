@@ -71,6 +71,9 @@ function layoutTightSplitToFill(
   offset: number[],
 ): PublicOutputNode[] {
   if (node.kind === NodeKind.TightLeaf) {
+    if (node.id === undefined) {
+      return [];
+    }
     return [
       {
         id: node.id,

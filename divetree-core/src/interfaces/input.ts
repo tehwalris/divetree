@@ -33,7 +33,7 @@ export interface TightSplitNode {
 
 export interface TightLeafNode {
   kind: NodeKind.TightLeaf;
-  id: Id;
+  id?: Id;
   size: number[];
 }
 

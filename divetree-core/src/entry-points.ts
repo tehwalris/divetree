@@ -57,16 +57,19 @@ function toWorkingTree(
   config: Config,
   node: RootNode,
   parent: TreeNode<WorkingNodeA> | undefined,
-): TreeNode<WorkingNodeA> {
+): TreeNode<WorkingNodeA> | undefined {
   switch (node.kind) {
     case NodeKind.TightLeaf:
+      if (node.id === undefined) {
+        return undefined;
+      }
       return {
         size: node.size,
         paddingRight: 0,
         data: node,
         getOutput: (v) => [
           {
-            id: node.id,
+            id: node.id!,
             visible: true,
             size: v.size,
             offset: [v.x, v.y],
@@ -99,7 +102,17 @@ function toWorkingTree(
       } else if (node.children.length > 1) {
         paddingRight = config.loose.multiChildDistance;
       }
-      const base = toWorkingTree(config, node.parent, parent);
+      const base: TreeNode<WorkingNodeA> = toWorkingTree(
+        config,
+        node.parent,
+        parent,
+      ) || {
+        size: [0, 0],
+        paddingRight: 0,
+        data: node.parent,
+        getOutput: () => [],
+        children: [],
+      };
       const self: TreeNode<WorkingNodeA> = {
         ...base,
         paddingRight,
@@ -116,7 +129,10 @@ function toWorkingTree(
       if (self.children.length) {
         throw new Error("unexpected children created by LooseNode.parent");
       }
-      self.children = node.children.map((c) => toWorkingTree(config, c, self));
+      self.children = node.children
+        .map((c) => toWorkingTree(config, c, self))
+        .filter((v) => v)
+        .map((v) => v!);
       return self;
     default:
       return unreachable(node);
@@ -287,6 +303,9 @@ function _doLayoutNew(
   });
 
   const treeA = toWorkingTree(config, root, undefined);
+  if (!treeA) {
+    return new Map();
+  }
   visitTree(treeA, (node) => {
     node.size = R.reverse(node.size);
     node.size[1] += node.paddingRight;
