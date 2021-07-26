@@ -47,11 +47,11 @@ function indexTreeNodesById(
   root: Node,
   kind: NodeKind.TightLeaf | NodeKind.Loose,
 ): Map<Id, Node> {
-  const out = new Map();
+  const out = new Map<Id, Node>();
   crawl(
     root,
     (e, context) => {
-      if (e.kind === kind) {
+      if (e.kind === kind && e.id !== undefined) {
         out.set(e.id, e);
       }
     },
