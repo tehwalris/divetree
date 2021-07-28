@@ -12,6 +12,7 @@ import {
   Id,
   unionOffsetRects,
   offsetRectsMayIntersect,
+  LayoutCache,
 } from "divetree-core";
 import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
@@ -77,6 +78,7 @@ export class FocusedTree extends React.Component<Props, State> {
   };
 
   private queue!: AnimationQueue<DivetreeNode, Interpolator>;
+  private layoutCache = new LayoutCache();
 
   componentDidMount() {
     this.queue = new AnimationQueue(
@@ -136,7 +138,7 @@ export class FocusedTree extends React.Component<Props, State> {
   private updateFocusTarget({ tree, layoutConfig, focusedId }: Props) {
     let targetRect;
     if (focusedId !== undefined) {
-      targetRect = doLayout(tree, layoutConfig!).find(
+      targetRect = doLayout(tree, layoutConfig!, this.layoutCache).find(
         (e) => e.id === focusedId,
       );
     }
@@ -167,7 +169,7 @@ export class FocusedTree extends React.Component<Props, State> {
     a: DivetreeNode,
     b: DivetreeNode,
   ): Interpolator => {
-    return doLayoutAnimated(a, b, this.props.layoutConfig!);
+    return doLayoutAnimated(a, b, this.props.layoutConfig!, this.layoutCache);
   };
 
   private getFocuses(): Focus[] {

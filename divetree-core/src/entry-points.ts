@@ -35,17 +35,22 @@ export interface Config {
   };
 }
 
-export function doLayout(root: RootNode, config: Config): InternalOutputNode[] {
-  return [..._doLayoutNew(root, config).values()];
+export function doLayout(
+  root: RootNode,
+  config: Config,
+  layoutCache: LayoutCache,
+): InternalOutputNode[] {
+  return [..._doLayoutNew(root, config, layoutCache).values()];
 }
 
 export function doLayoutAnimated(
   before: RootNode,
   after: RootNode,
   config: Config,
+  layoutCache: LayoutCache,
 ): Interpolator {
-  const beforeRects = _doLayoutNew(before, config);
-  const afterRects = _doLayoutNew(after, config);
+  const beforeRects = _doLayoutNew(before, config, layoutCache);
+  const afterRects = _doLayoutNew(after, config, layoutCache);
   const animationGroups = planAnimation(before, after);
   const interpolators = animationGroups.map((e) =>
     makeInterpolator(beforeRects, afterRects, e),
@@ -157,7 +162,7 @@ function layoutPortals(
   }
 
   function extractPortal(portalNode: PortalNode): PureTightNode {
-    const layout = _doLayoutNew(portalNode.child, config);
+    const layout = _doLayoutNew(portalNode.child, config, undefined);
     layoutsByPortalId.set(portalNode.id, layout);
     return {
       kind: NodeKind.TightLeaf,
@@ -288,10 +293,36 @@ function visitTree<T>(node: TreeNode<T>, cb: (node: T) => void): void {
   node.children.forEach((c) => visitTree(c, cb));
 }
 
+export class LayoutCache {
+  private config: Config | undefined;
+  private resultsByNode = new WeakMap<RootNode, Map<Id, PublicOutputNode>>();
+
+  set(node: RootNode, config: Config, result: Map<Id, PublicOutputNode>) {
+    if (this.config && this.config !== config) {
+      this.resultsByNode = new WeakMap();
+    }
+    this.config = config;
+    this.resultsByNode.set(node, result);
+  }
+
+  get(node: RootNode, config: Config): Map<Id, PublicOutputNode> | undefined {
+    if (this.config !== config) {
+      return undefined;
+    }
+    return this.resultsByNode.get(node);
+  }
+}
+
 function _doLayoutNew(
   root: RootNode,
   config: Config,
+  layoutCache: LayoutCache | undefined,
 ): Map<Id, PublicOutputNode> {
+  const cachedOut = layoutCache?.get(root, config);
+  if (cachedOut) {
+    return cachedOut;
+  }
+
   const layout = flextree({
     nodeSize: (node: TreeNode<WorkingNodeA>): number[] => node.size,
     spacing: (a: TreeNode<WorkingNodeA>, b: TreeNode<WorkingNodeA>): number => {
@@ -326,5 +357,6 @@ function _doLayoutNew(
       out.set(outputNode.id, outputNode);
     });
   });
+  layoutCache?.set(root, config, out);
   return out;
 }
