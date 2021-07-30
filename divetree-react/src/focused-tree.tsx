@@ -31,7 +31,8 @@ interface Props {
 }
 
 interface State {
-  rects: DrawRect[];
+  rectInterpolators: DrawRectInterpolator[];
+  rectInterpolatorProgress: number;
   offset: number[];
   offsetVelocity: number[];
   focusTarget: number[];
@@ -66,7 +67,8 @@ export class FocusedTree extends React.Component<Props, State> {
   };
 
   state: State = {
-    rects: [],
+    rectInterpolators: [],
+    rectInterpolatorProgress: 0,
     offset: [0, 0],
     offsetVelocity: [0, 0],
     focusTarget: [0, 0],
@@ -125,9 +127,8 @@ export class FocusedTree extends React.Component<Props, State> {
     } = this.queue.tick(dtMillis);
     if (queueDidChange || this.forceNextUpdate) {
       this.setState({
-        rects: interval.map((interpolator) =>
-          drawRectFromInterpolator(interpolator, progress),
-        ),
+        rectInterpolatorProgress: progress,
+        rectInterpolators: interval,
       });
     }
 
@@ -221,7 +222,14 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   render() {
-    const { rects, offset, focusTarget, lastFocusTarget } = this.state;
+    const {
+      rectInterpolators,
+      rectInterpolatorProgress,
+      offset,
+      focusTarget,
+      lastFocusTarget,
+    } = this.state;
+
     const viewport = { width: 1000, height: 650 };
     const viewportTransitionBound = unionOffsetRects(
       [focusTarget, lastFocusTarget].map((target) => ({
@@ -232,11 +240,20 @@ export class FocusedTree extends React.Component<Props, State> {
         ],
       })),
     );
-    const possiblyVisibleRects = rects.filter(
-      (rect) =>
-        !rect.transitionBound ||
-        offsetRectsMayIntersect(rect.transitionBound, viewportTransitionBound),
+
+    const possiblyVisibleRectInterpolators = rectInterpolators.filter(
+      (interpolator) =>
+        !interpolator.transitionBound ||
+        offsetRectsMayIntersect(
+          interpolator.transitionBound,
+          viewportTransitionBound,
+        ),
     );
+    const possiblyVisibleRects = possiblyVisibleRectInterpolators.map(
+      (interpolator) =>
+        drawRectFromInterpolator(interpolator, rectInterpolatorProgress),
+    );
+
     console.log("DEBUG FocusedTree.render");
     return (
       <Viewport
