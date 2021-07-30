@@ -19,13 +19,12 @@ export interface SpringResult {
   velocity: number;
 }
 
-export interface SpringPathElement {
-  result: SpringResult;
-  dt: number;
-}
-
 export class SpringPath {
-  constructor(private elements: SpringPathElement[]) {}
+  constructor(private elements: SpringResult[], private stepMillis: number) {
+    if (elements.length === 1) {
+      elements = [];
+    }
+  }
 }
 
 export class Spring {
@@ -36,25 +35,25 @@ export class Spring {
       position: input.position,
       velocity: input.velocity,
     };
-    this.calculate(input, (e) => {
-      latestResult = e.result;
+    this.calculate(input, (r) => {
+      latestResult = r;
     });
     return latestResult;
   }
 
   calculatePath(input: SpringInput): SpringPath {
-    const pathElements: SpringPathElement[] = [];
-    this.calculate(input, (e) => {
-      pathElements.push(e);
+    const pathElements: SpringResult[] = [];
+    this.calculate(input, (r) => {
+      pathElements.push(r);
     });
-    return new SpringPath(pathElements);
+    return new SpringPath(pathElements, this.options.stepMillis);
   }
 
   // Heavily based on the spring implementation in react-motion
   // https://github.com/chenglou/react-motion/blob/master/src/stepper.js
   private calculate(
     input: SpringInput,
-    onElement: (element: SpringPathElement) => void,
+    onElement: (result: SpringResult, dt: number) => void,
   ) {
     const k = this.options.stiffness;
     const b = this.options.damping;
@@ -76,11 +75,11 @@ export class Spring {
         Math.abs(v) < this.options.precision &&
         Math.abs(s - input.target) < this.options.precision
       ) {
-        onElement({ result: { position: input.target, velocity: 0 }, dt });
+        onElement({ position: input.target, velocity: 0 }, dt);
         return;
       }
 
-      onElement({ result: { position: s, velocity: v }, dt });
+      onElement({ position: s, velocity: v }, dt);
     }
   }
 }

@@ -18,6 +18,7 @@ import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
 import * as R from "ramda";
 import { Viewport } from "./viewport";
+import { SpringPath } from "../../divetree-core/lib/spring";
 
 interface Props {
   expansionSpring?: Spring;
@@ -37,6 +38,7 @@ interface State {
   focusId: Id | undefined;
   lastFocusTarget: number[];
   lastFocusId: Id | undefined;
+  focusPath: SpringPath[] | undefined;
   didUnmount: boolean;
 }
 
@@ -71,6 +73,7 @@ export class FocusedTree extends React.Component<Props, State> {
     focusId: undefined,
     lastFocusTarget: [0, 0],
     lastFocusId: undefined,
+    focusPath: undefined,
     didUnmount: false,
   };
 
@@ -161,11 +164,22 @@ export class FocusedTree extends React.Component<Props, State> {
     if (targetRect) {
       const { size } = targetRect;
       const center = targetRect.offset.map((e, i) => size[i] / 2 + e);
+      const { offset, offsetVelocity } = this.state;
+      const focusPath = center.map((e, i) =>
+        this.props.focusSpring!.calculatePath({
+          position: offset[i],
+          velocity: offsetVelocity[i],
+          dtMillis: Infinity,
+          target: -e,
+        }),
+      );
+      console.log("DEBUG focusPath", focusPath);
       this.setState({
         focusTarget: center,
         focusId: focusedId,
         lastFocusTarget: this.state.focusTarget,
         lastFocusId: this.state.focusId,
+        focusPath,
       });
     } else {
       this.setState({
@@ -173,6 +187,8 @@ export class FocusedTree extends React.Component<Props, State> {
         focusId: undefined,
         lastFocusTarget: this.state.focusTarget,
         lastFocusId: this.state.focusId,
+        // TODO focus path should still be calculated here
+        focusPath: undefined,
       });
     }
   }
