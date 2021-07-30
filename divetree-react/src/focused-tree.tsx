@@ -18,6 +18,7 @@ import {
 import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
 import * as R from "ramda";
+import { Viewport } from "./viewport";
 
 interface Props {
   expansionSpring?: Spring;
@@ -218,15 +219,21 @@ export class FocusedTree extends React.Component<Props, State> {
     );
     console.log("DEBUG FocusedTree.render");
     return (
-      <Rects
-        offset={offset}
-        rects={possiblyVisibleRects}
-        focuses={this.getFocuses()}
+      <Viewport
         width={viewport.width}
         height={viewport.height}
-        getContent={this.props.getContent}
-        getStyle={this.props.getStyle}
-      />
+        offset={[
+          offset[0] + viewport.width / 3,
+          offset[1] + viewport.height / 3,
+        ]}
+      >
+        <Rects
+          rects={possiblyVisibleRects}
+          focuses={this.getFocuses()}
+          getContent={this.props.getContent}
+          getStyle={this.props.getStyle}
+        />
+      </Viewport>
     );
   }
 }
