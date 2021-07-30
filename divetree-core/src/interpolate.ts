@@ -14,6 +14,14 @@ export interface DrawRectScaling {
   };
 }
 
+export interface DrawRectInterpolator {
+  id: Id;
+  lifecycle: (t: number) => number;
+  withoutScaling: (t: number) => DrawRect["withoutScaling"];
+  withScaling?: (t: number) => NonNullable<DrawRect["withScaling"]>;
+  transitionBound?: DrawRect["transitionBound"];
+}
+
 export interface DrawRect {
   id: Id;
   lifecycle: number; // -1 before enter, 0 normal, 1 after leave (continuous)
@@ -33,94 +41,89 @@ export interface DrawRect {
   };
 }
 
-export type Interpolator = (t: number) => DrawRect[];
+export function drawRectFromInterpolator(
+  interpolator: DrawRectInterpolator,
+  t: number,
+): DrawRect {
+  return {
+    id: interpolator.id,
+    lifecycle: interpolator.lifecycle(t),
+    withoutScaling: interpolator.withoutScaling(t),
+    withScaling: interpolator.withScaling?.(t),
+    transitionBound: interpolator.transitionBound,
+  };
+}
 
-export function makeInterpolator(
+export function makeInterpolators(
   before: Map<Id, Node>,
   after: Map<Id, Node>,
   animation: AnimationGroup,
-): Interpolator {
+): DrawRectInterpolator[] {
   if (animation.kind === AnimationKind.Transform) {
     const transitionBounds = animation.content.map((id) => {
       const b = before.get(id);
       const a = after.get(id);
       if (!b || !a) {
-        return undefined;
+        throw new Error(`missing node: ${id}`);
       }
       return unionOffsetRects([a, b]);
     });
-    return (t) =>
-      animation.content
-        .map((id, i) => {
-          const b = before.get(id);
-          const a = after.get(id);
-          if (!b || !a) {
-            // TODO this is only necessary while refactoring
-            // change to a throw later
-            console.warn("missing node", id);
-            return undefined;
-          }
-          return {
-            id,
-            lifecycle: 0,
-            withoutScaling: {
-              size: mixVector(b.size, a.size, t),
-              offset: mixVector(b.offset, a.offset, t),
-            },
-            transitionBound: transitionBounds[i],
-          };
-        })
-        .filter((v) => v)
-        .map((v) => v!);
+    return animation.content.map((id, i) => {
+      const b = before.get(id);
+      const a = after.get(id);
+      if (!b || !a) {
+        throw new Error(`missing node: ${id}`);
+      }
+      return {
+        id,
+        lifecycle: () => 0,
+        withoutScaling: (t) => ({
+          size: mixVector(b.size, a.size, t),
+          offset: mixVector(b.offset, a.offset, t),
+        }),
+        transitionBound: transitionBounds[i],
+      };
+    });
   }
-  const genericEnterLeave =
-    (
-      target: Map<Id, Node>,
-      _lifecycle: (t: number) => number,
-      _finalMix: (t: number) => number,
-    ): Interpolator =>
-    (t) => {
-      const lifecycle = _lifecycle(t);
-      const finalMix = _finalMix(t);
-      const _origin =
-        animation.parent !== undefined &&
+  const genericEnterLeave = (
+    target: Map<Id, Node>,
+    lifecycle: (t: number) => number,
+    finalMix: (t: number) => number,
+  ): DrawRectInterpolator[] => {
+    const _origin =
+      animation.parent !== undefined &&
+      ((t: number) =>
         mixVector(
-          getCenterLeft(before.get(animation.parent)!),
-          getCenterLeft(after.get(animation.parent)!),
+          getCenterLeft(before.get(animation.parent!)!),
+          getCenterLeft(after.get(animation.parent!)!),
           t,
-        );
-      return animation.content
-        .map((id) => {
-          const e = target.get(id);
-          if (!e) {
-            // TODO this is only necessary while refactoring
-            // change to a throw later
-            console.warn("missing node", id);
-            return undefined;
-          }
-          const origin = _origin || getCenterLeft(e);
-          return {
-            id,
-            lifecycle,
-            withoutScaling: {
-              size: e.size,
-              offset: e.offset,
-            },
-            withScaling: {
-              precomputed: {
-                size: mixVector([0, 0], e.size, finalMix),
-                offset: mixVector(origin, e.offset, finalMix),
-              },
-              info: {
-                scale: finalMix,
-                origin: origin,
-              },
-            },
-          };
-        })
-        .filter((v) => v)
-        .map((v) => v!);
-    };
+        ));
+    return animation.content.map((id) => {
+      const e = target.get(id);
+      if (!e) {
+        throw new Error(`missing node: ${id}`);
+      }
+      const origin = _origin || (() => getCenterLeft(e));
+      return {
+        id,
+        lifecycle,
+        withoutScaling: (t) => ({
+          size: e.size,
+          offset: e.offset,
+        }),
+        withScaling: (t) => ({
+          precomputed: {
+            size: mixVector([0, 0], e.size, finalMix(t)),
+            offset: mixVector(origin(t), e.offset, finalMix(t)),
+          },
+          info: {
+            scale: finalMix(t),
+            origin: origin(t),
+          },
+        }),
+      };
+    });
+  };
   return animation.kind === AnimationKind.Enter
     ? genericEnterLeave(
         after,

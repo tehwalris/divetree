@@ -1,6 +1,10 @@
 export * from "./interfaces/input";
 export { PublicOutputNode as OutputNode } from "./interfaces/output";
-export { DrawRect, Interpolator } from "./interpolate";
+export {
+  DrawRect,
+  DrawRectInterpolator,
+  drawRectFromInterpolator,
+} from "./interpolate";
 export {
   doLayout,
   doLayoutAnimated,

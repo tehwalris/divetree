@@ -1,7 +1,11 @@
 import "jest";
 import { Id } from "../interfaces/input";
 import { PublicOutputNode } from "../interfaces/output";
-import { makeInterpolator, DrawRect } from "../interpolate";
+import {
+  makeInterpolators,
+  drawRectFromInterpolator,
+  DrawRect,
+} from "../interpolate";
 import { AnimationKind, AnimationGroup } from "../plan-animation";
 
 function setup(): { [K in "before" | "after"]: Map<Id, PublicOutputNode> } {
@@ -56,8 +60,10 @@ function setup(): { [K in "before" | "after"]: Map<Id, PublicOutputNode> } {
 function templatedTest(animation: AnimationGroup, expected: DrawRect[]) {
   return () => {
     const { before, after } = setup();
-    const interpolator = makeInterpolator(before, after, animation);
-    const actual = interpolator(0.25);
+    const interpolators = makeInterpolators(before, after, animation);
+    const actual = interpolators.map((interpolator) =>
+      drawRectFromInterpolator(interpolator, 0.25),
+    );
     expect(actual.length).toBe(expected.length);
     expected.forEach((a) => {
       expect(actual.find((b) => drawRectEqualEnough(a, b))).toBeTruthy();
@@ -238,8 +244,4 @@ describe("makeInterpolator", () => {
       ],
     ),
   );
-
-  test.skip("enter leave in special case", () => {
-    // const origin = _origin || ***getCenterLeft(e);***
-  });
 });

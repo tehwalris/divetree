@@ -16,7 +16,7 @@ import {
   WorkingNodeB,
   WorkingNodeC,
 } from "./interfaces/working";
-import { Interpolator, makeInterpolator } from "./interpolate";
+import { DrawRectInterpolator, makeInterpolators } from "./interpolate";
 import { planAnimation } from "./plan-animation";
 import { layoutTight } from "./tight-layout";
 import { unreachable } from "./unreachable";
@@ -48,14 +48,13 @@ export function doLayoutAnimated(
   after: RootNode,
   config: Config,
   layoutCache: LayoutCache,
-): Interpolator {
+): DrawRectInterpolator[] {
   const beforeRects = _doLayoutNew(before, config, layoutCache);
   const afterRects = _doLayoutNew(after, config, layoutCache);
   const animationGroups = planAnimation(before, after);
-  const interpolators = animationGroups.map((e) =>
-    makeInterpolator(beforeRects, afterRects, e),
+  return animationGroups.flatMap((e) =>
+    makeInterpolators(beforeRects, afterRects, e),
   );
-  return (t) => R.chain((e) => e(t), interpolators);
 }
 
 function toWorkingTree(

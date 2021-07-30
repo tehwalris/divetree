@@ -5,7 +5,7 @@ import {
   DrawRect,
   AnimationQueue,
   RootNode as DivetreeNode,
-  Interpolator,
+  DrawRectInterpolator,
   LayoutConfig,
   doLayout,
   doLayoutAnimated,
@@ -13,6 +13,7 @@ import {
   unionOffsetRects,
   offsetRectsMayIntersect,
   LayoutCache,
+  drawRectFromInterpolator,
 } from "divetree-core";
 import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
@@ -75,7 +76,7 @@ export class FocusedTree extends React.Component<Props, State> {
 
   private lastT = 0;
   private forceNextUpdate = true;
-  private queue!: AnimationQueue<DivetreeNode, Interpolator>;
+  private queue!: AnimationQueue<DivetreeNode, DrawRectInterpolator[]>;
   private layoutCache = new LayoutCache();
 
   componentDidMount() {
@@ -119,7 +120,11 @@ export class FocusedTree extends React.Component<Props, State> {
       return;
     }
     this.forceNextUpdate = false;
-    this.setState({ rects: interval(progress) });
+    this.setState({
+      rects: interval.map((interpolator) =>
+        drawRectFromInterpolator(interpolator, progress),
+      ),
+    });
 
     const { offset, offsetVelocity, focusTarget } = this.state;
     const springOutputs = focusTarget.map((e, i) =>
@@ -170,7 +175,7 @@ export class FocusedTree extends React.Component<Props, State> {
   private indirectDoLayoutAnimated = (
     a: DivetreeNode,
     b: DivetreeNode,
-  ): Interpolator => {
+  ): DrawRectInterpolator[] => {
     return doLayoutAnimated(a, b, this.props.layoutConfig!, this.layoutCache);
   };
 
