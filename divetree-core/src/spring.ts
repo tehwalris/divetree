@@ -21,9 +21,47 @@ export interface SpringResult {
 
 export class SpringPath {
   constructor(private elements: SpringResult[], private stepMillis: number) {
-    if (elements.length === 1) {
-      elements = [];
+    if (elements.length === 0) {
+      throw new Error("SpringPath.elements can not be empty");
     }
+  }
+
+  getResult(dt: number): { result: SpringResult; endOfPath: boolean } {
+    // TODO this is inefficient
+    let lastResult: SpringResult = this.elements[0];
+    let dtSoFar = 0;
+    let endOfPath = false;
+    for (const result of this.elements) {
+      lastResult = result;
+      dtSoFar += this.stepMillis;
+      if (dtSoFar >= dt) {
+        endOfPath = true;
+        break;
+      }
+    }
+    return { result: lastResult, endOfPath };
+  }
+
+  getDurationMillis(): number {
+    return this.elements.length * this.stepMillis;
+  }
+
+  static getZippedPositions(paths: SpringPath[]): number[][] {
+    if (!paths.length) {
+      return [];
+    }
+    if (!paths.every((p) => p.stepMillis === paths[0].stepMillis)) {
+      throw new Error("every path to zip must have identical stepMillis");
+    }
+    const output: number[][] = [];
+    for (let i = 0; i < Math.max(...paths.map((p) => p.elements.length)); i++) {
+      output.push(
+        paths.map(
+          (p) => p.elements[Math.min(i, p.elements.length - 1)].position,
+        ),
+      );
+    }
+    return output;
   }
 }
 
@@ -42,7 +80,9 @@ export class Spring {
   }
 
   calculatePath(input: SpringInput): SpringPath {
-    const pathElements: SpringResult[] = [];
+    const pathElements: SpringResult[] = [
+      { position: input.position, velocity: input.velocity },
+    ];
     this.calculate(input, (r) => {
       pathElements.push(r);
     });

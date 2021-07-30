@@ -33,13 +33,12 @@ interface Props {
 interface State {
   rectInterpolators: DrawRectInterpolator[];
   rectInterpolatorProgress: number;
-  offset: number[];
-  offsetVelocity: number[];
   focusTarget: number[];
   focusId: Id | undefined;
   lastFocusTarget: number[];
   lastFocusId: Id | undefined;
-  focusPath: SpringPath[] | undefined;
+  focusPath: SpringPath[];
+  focusPathStartedAt: number;
   didUnmount: boolean;
 }
 
@@ -69,13 +68,14 @@ export class FocusedTree extends React.Component<Props, State> {
   state: State = {
     rectInterpolators: [],
     rectInterpolatorProgress: 0,
-    offset: [0, 0],
-    offsetVelocity: [0, 0],
     focusTarget: [0, 0],
     focusId: undefined,
     lastFocusTarget: [0, 0],
     lastFocusId: undefined,
-    focusPath: undefined,
+    focusPath: [0, 1].map(
+      () => new SpringPath([{ position: 0, velocity: 0 }], 5),
+    ),
+    focusPathStartedAt: 0,
     didUnmount: false,
   };
 
@@ -131,26 +131,6 @@ export class FocusedTree extends React.Component<Props, State> {
         rectInterpolators: interval,
       });
     }
-
-    const { offset, offsetVelocity, focusTarget } = this.state;
-    const focusWillChange = !focusTarget.every(
-      (e, i) => offset[i] === -e && offsetVelocity[i] === 0,
-    );
-    if (focusWillChange || this.forceNextUpdate) {
-      const springOutputs = focusTarget.map((e, i) =>
-        this.props.focusSpring!.calculateResult({
-          position: offset[i],
-          velocity: offsetVelocity[i],
-          dtMillis,
-          target: -e,
-        }),
-      );
-      this.setState({
-        offset: springOutputs.map((e) => e.position),
-        offsetVelocity: springOutputs.map((e) => e.velocity),
-      });
-    }
-
     this.forceNextUpdate = false;
   }
 
@@ -162,25 +142,37 @@ export class FocusedTree extends React.Component<Props, State> {
         (e) => e.id === focusedId,
       );
     }
+
+    const calculateFocusPath = (target: number[]): SpringPath[] => {
+      const {
+        focusPath: oldFocusPath,
+        focusPathStartedAt: oldFocusPathStartedAt,
+      } = this.state;
+      const focusPath = target.map((e, i) => {
+        const { result: oldResult } = oldFocusPath[i].getResult(
+          window.performance.now() - oldFocusPathStartedAt,
+        );
+        return this.props.focusSpring!.calculatePath({
+          position: oldResult.position,
+          velocity: oldResult.velocity,
+          dtMillis: Infinity,
+          target: -e,
+        });
+      });
+      console.log("DEBUG focusPath", focusPath);
+      return focusPath;
+    };
+
     if (targetRect) {
       const { size } = targetRect;
       const center = targetRect.offset.map((e, i) => size[i] / 2 + e);
-      const { offset, offsetVelocity } = this.state;
-      const focusPath = center.map((e, i) =>
-        this.props.focusSpring!.calculatePath({
-          position: offset[i],
-          velocity: offsetVelocity[i],
-          dtMillis: Infinity,
-          target: -e,
-        }),
-      );
-      console.log("DEBUG focusPath", focusPath);
       this.setState({
         focusTarget: center,
         focusId: focusedId,
         lastFocusTarget: this.state.focusTarget,
         lastFocusId: this.state.focusId,
-        focusPath,
+        focusPath: calculateFocusPath(center),
+        focusPathStartedAt: window.performance.now(),
       });
     } else {
       this.setState({
@@ -188,8 +180,8 @@ export class FocusedTree extends React.Component<Props, State> {
         focusId: undefined,
         lastFocusTarget: this.state.focusTarget,
         lastFocusId: this.state.focusId,
-        // TODO focus path should still be calculated here
-        focusPath: undefined,
+        focusPath: calculateFocusPath(this.state.focusTarget),
+        focusPathStartedAt: window.performance.now(),
       });
     }
   }
@@ -201,9 +193,27 @@ export class FocusedTree extends React.Component<Props, State> {
     return doLayoutAnimated(a, b, this.props.layoutConfig!, this.layoutCache);
   };
 
+  private getOffset(): number[] {
+    const { focusPath, focusPathStartedAt } = this.state;
+    let endOfAnimation = true;
+    const offset = focusPath.map((p) => {
+      const { result, endOfPath } = p.getResult(
+        window.performance.now() - focusPathStartedAt,
+      );
+      if (!endOfPath) {
+        endOfAnimation = false;
+      }
+      return result.position;
+    });
+    if (!endOfAnimation) {
+      this.forceNextUpdate = true;
+    }
+    return offset;
+  }
+
   private getFocuses(): Focus[] {
-    const { focusId, lastFocusId, offset, focusTarget, lastFocusTarget } =
-      this.state;
+    const { focusId, lastFocusId, focusTarget, lastFocusTarget } = this.state;
+    const offset = this.getOffset();
     const getDistance = R.compose(
       Math.sqrt,
       R.sum,
@@ -225,9 +235,9 @@ export class FocusedTree extends React.Component<Props, State> {
     const {
       rectInterpolators,
       rectInterpolatorProgress,
-      offset,
       focusTarget,
       lastFocusTarget,
+      focusPath,
     } = this.state;
 
     const viewport = { width: 1000, height: 650 };
@@ -259,10 +269,8 @@ export class FocusedTree extends React.Component<Props, State> {
       <Viewport
         width={viewport.width}
         height={viewport.height}
-        offset={[
-          offset[0] + viewport.width / 3,
-          offset[1] + viewport.height / 3,
-        ]}
+        staticOffset={[viewport.width / 3, viewport.height / 3]}
+        offsetPath={focusPath}
       >
         <Rects
           rects={possiblyVisibleRects}
