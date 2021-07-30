@@ -50,11 +50,15 @@ function useKeyframeAnimation(keyframesDeclarationBody: string) {
     const name = `viewport-animation-${Math.round(100000 * Math.random())}`;
     sheet.insertRule(`@keyframes ${name} { ${keyframesDeclarationBody} }`);
     setAnimationName(name);
-
-    return () => {
-      sheet.removeRule(0);
-    };
   }, [sheet, keyframesDeclarationBody]);
+  useEffect(() => {
+    if (!sheet) {
+      return;
+    }
+    while (sheet.rules.length > 1) {
+      sheet.removeRule(sheet.rules.length - 1);
+    }
+  }, [animationName]);
   return animationName;
 }
 
@@ -98,9 +102,6 @@ export const Viewport = ({
     >
       <div
         style={{
-          transform: `translate(${staticOffset
-            .map((v) => `${roundPixel(v)}px`)
-            .join(", ")})`,
           animationName,
           animationDuration: `${animationDurationMillis}ms`,
           animationFillMode: "forwards",
