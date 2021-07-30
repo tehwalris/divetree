@@ -50,7 +50,7 @@ export class AnimationQueue<T, I> {
   }
 
   private tickSpring(dtMillis: number, target: number): boolean {
-    const updated = this.spring({
+    const updated = this.spring.calculateResult({
       position: this.position,
       velocity: this.velocity,
       dtMillis,

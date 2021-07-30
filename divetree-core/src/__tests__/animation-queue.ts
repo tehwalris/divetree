@@ -1,8 +1,13 @@
 import "jest";
 import { AnimationQueue } from "../animation-queue";
+import { Spring } from "../spring";
 
 // AnimationQueue should not care about dtMillis and velocity,
 // so arbitrary values are used in these tests
+
+function mockSpring(calculateResultMock: () => unknown): Spring {
+  return { calculateResult: calculateResultMock } as any as Spring;
+}
 
 describe("AnimationQueue", () => {
   let buildInterval: <T>(a: T, b: T) => [T, T];
@@ -11,21 +16,23 @@ describe("AnimationQueue", () => {
   });
 
   it("has expected initial state", () => {
-    const spring = jest.fn().mockReturnValueOnce({ position: 2, velocity: 0 });
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const springFn = jest
+      .fn()
+      .mockReturnValueOnce({ position: 2, velocity: 0 });
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 1,
       didChange: true,
     });
-    expect(spring.mock.calls).toEqual([
+    expect(springFn.mock.calls).toEqual([
       [{ position: 2, velocity: 0, target: 2, dtMillis: 0 }],
     ]);
   });
 
   it("doesn't change state if spring doesn't move", () => {
-    const spring = jest.fn().mockReturnValue({ position: 2, velocity: 0 });
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const springFn = jest.fn().mockReturnValue({ position: 2, velocity: 0 });
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     [1000, 0, 9999, 83888].forEach((dt, i) => {
       expect(queue.tick(dt)).toEqual({
         interval: ["a", "a"],
@@ -36,8 +43,8 @@ describe("AnimationQueue", () => {
   });
 
   it("moves through initial interval according to spring position", () => {
-    const spring = jest.fn();
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const springFn = jest.fn();
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     [
       {
         call: { position: 2, velocity: 0 },
@@ -58,13 +65,13 @@ describe("AnimationQueue", () => {
         dtMillis: 0,
       },
     ].forEach((e) => {
-      spring.mockReturnValueOnce(e.return);
+      springFn.mockReturnValueOnce(e.return);
       expect(queue.tick(e.dtMillis)).toEqual({
         interval: ["a", "a"],
         progress: e.progress,
         didChange: true,
       });
-      expect(spring).toHaveBeenLastCalledWith({
+      expect(springFn).toHaveBeenLastCalledWith({
         target: 2,
         dtMillis: e.dtMillis,
         ...e.call,
@@ -73,10 +80,10 @@ describe("AnimationQueue", () => {
   });
 
   it("extrapolates if no next interval is available", () => {
-    const spring = jest
+    const springFn = jest
       .fn()
       .mockReturnValueOnce({ position: 2.25, velocity: 0 });
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 1.25,
@@ -85,10 +92,10 @@ describe("AnimationQueue", () => {
   });
 
   it("switches to queued interval if there is one", () => {
-    const spring = jest
+    const springFn = jest
       .fn()
       .mockReturnValueOnce({ position: 2.25, velocity: 0 });
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     queue.queueChange("b");
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
@@ -98,31 +105,31 @@ describe("AnimationQueue", () => {
   });
 
   it("lets the queued interval be replaced if it isn't reached yet", () => {
-    const spring = jest.fn();
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const springFn = jest.fn();
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
 
     queue.queueChange("b");
     queue.queueChange("c");
-    spring.mockReturnValueOnce({ position: 2.25, velocity: 4 });
+    springFn.mockReturnValueOnce({ position: 2.25, velocity: 4 });
     expect(queue.tick(3)).toEqual({
       interval: ["a", "c"],
       progress: 0.25,
       didChange: true,
     });
-    expect(spring).toHaveBeenLastCalledWith({
+    expect(springFn).toHaveBeenLastCalledWith({
       position: 2,
       velocity: 0,
       target: 3,
       dtMillis: 3,
     });
 
-    spring.mockReturnValueOnce({ position: 2, velocity: 8 });
+    springFn.mockReturnValueOnce({ position: 2, velocity: 8 });
     expect(queue.tick(9)).toEqual({
       interval: ["a", "c"],
       progress: 1,
       didChange: true,
     });
-    expect(spring).toHaveBeenLastCalledWith({
+    expect(springFn).toHaveBeenLastCalledWith({
       // position coordinate system shifted by -1
       // spring is stateless, so it doesn't care
       position: 1.25, // 2.25 - 1
@@ -133,10 +140,10 @@ describe("AnimationQueue", () => {
   });
 
   it("does nothing instead of undershooting initially", () => {
-    const spring = jest
+    const springFn = jest
       .fn()
       .mockReturnValueOnce({ position: 0.75, velocity: 0 });
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 0.75,
@@ -148,12 +155,12 @@ describe("AnimationQueue", () => {
     // undershoot should only typically occur after reaching a target, overshooting, then bouncing back a little
     // though it could occur in other cases, they are not worth carefully planned support
 
-    const spring = jest.fn();
-    const queue = new AnimationQueue(spring, buildInterval, "a");
+    const springFn = jest.fn();
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
 
     // move past b
     queue.queueChange("b");
-    spring.mockReturnValueOnce({ position: 3.25, velocity: 0 });
+    springFn.mockReturnValueOnce({ position: 3.25, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
       progress: 1.25,
@@ -162,13 +169,13 @@ describe("AnimationQueue", () => {
 
     // move past c
     queue.queueChange("c");
-    spring.mockReturnValueOnce({ position: 3.25, velocity: 0 });
+    springFn.mockReturnValueOnce({ position: 3.25, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["b", "c"],
       progress: 1.25,
       didChange: true,
     });
-    expect(spring).toHaveBeenLastCalledWith({
+    expect(springFn).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
       velocity: 0,
       target: 3,
@@ -176,13 +183,13 @@ describe("AnimationQueue", () => {
     });
 
     // undershoot (drop back under c) our target (now 2, not 3, due to shift)
-    spring.mockReturnValueOnce({ position: 0.5, velocity: 0 });
+    springFn.mockReturnValueOnce({ position: 0.5, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
       progress: 0.5,
       didChange: true,
     });
-    expect(spring).toHaveBeenLastCalledWith({
+    expect(springFn).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
       velocity: 0,
       target: 2,
@@ -190,7 +197,7 @@ describe("AnimationQueue", () => {
     });
 
     // stabilize back in the "current" interval
-    spring.mockReturnValueOnce({ position: 1.25, velocity: 0 });
+    springFn.mockReturnValueOnce({ position: 1.25, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["b", "c"],
       progress: 0.25,
@@ -199,15 +206,15 @@ describe("AnimationQueue", () => {
   });
 
   it("deals with spring misbehaving", () => {
-    const spring = jest.fn();
-    const queue = new AnimationQueue(spring, buildInterval, "a");
-    spring.mockReturnValueOnce({ position: 999999, velocity: 0 });
+    const springFn = jest.fn();
+    const queue = new AnimationQueue(mockSpring(springFn), buildInterval, "a");
+    springFn.mockReturnValueOnce({ position: 999999, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 999998,
       didChange: true,
     });
-    spring.mockReturnValueOnce({ position: -999999, velocity: 0 });
+    springFn.mockReturnValueOnce({ position: -999999, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: -999999,

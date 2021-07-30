@@ -1,7 +1,6 @@
 import * as React from "react";
 import {
   Spring,
-  createSpring,
   DrawRect,
   AnimationQueue,
   RootNode as DivetreeNode,
@@ -41,7 +40,7 @@ interface State {
   didUnmount: boolean;
 }
 
-const DEFAULT_SPRING = createSpring({
+const DEFAULT_SPRING = new Spring({
   stepMillis: 5,
   precision: 0.01,
   stiffness: 260,
@@ -82,7 +81,7 @@ export class FocusedTree extends React.Component<Props, State> {
 
   componentDidMount() {
     this.queue = new AnimationQueue(
-      this.indirectSpring,
+      this.props.expansionSpring!,
       this.indirectDoLayoutAnimated,
       this.props.tree,
     );
@@ -116,30 +115,39 @@ export class FocusedTree extends React.Component<Props, State> {
   };
 
   private tick(dtMillis: number) {
-    const { progress, interval, didChange } = this.queue.tick(dtMillis);
-    if (!didChange && !this.forceNextUpdate) {
-      return;
+    const {
+      progress,
+      interval,
+      didChange: queueDidChange,
+    } = this.queue.tick(dtMillis);
+    if (queueDidChange || this.forceNextUpdate) {
+      this.setState({
+        rects: interval.map((interpolator) =>
+          drawRectFromInterpolator(interpolator, progress),
+        ),
+      });
     }
-    this.forceNextUpdate = false;
-    this.setState({
-      rects: interval.map((interpolator) =>
-        drawRectFromInterpolator(interpolator, progress),
-      ),
-    });
 
     const { offset, offsetVelocity, focusTarget } = this.state;
-    const springOutputs = focusTarget.map((e, i) =>
-      this.props.focusSpring!({
-        position: offset[i],
-        velocity: offsetVelocity[i],
-        dtMillis,
-        target: -e,
-      }),
+    const focusWillChange = !focusTarget.every(
+      (e, i) => offset[i] === -e && offsetVelocity[i] === 0,
     );
-    this.setState({
-      offset: springOutputs.map((e) => e.position),
-      offsetVelocity: springOutputs.map((e) => e.velocity),
-    });
+    if (focusWillChange || this.forceNextUpdate) {
+      const springOutputs = focusTarget.map((e, i) =>
+        this.props.focusSpring!.calculateResult({
+          position: offset[i],
+          velocity: offsetVelocity[i],
+          dtMillis,
+          target: -e,
+        }),
+      );
+      this.setState({
+        offset: springOutputs.map((e) => e.position),
+        offsetVelocity: springOutputs.map((e) => e.velocity),
+      });
+    }
+
+    this.forceNextUpdate = false;
   }
 
   private updateFocusTarget({ tree, layoutConfig, focusedId }: Props) {
@@ -168,10 +176,6 @@ export class FocusedTree extends React.Component<Props, State> {
       });
     }
   }
-
-  private indirectSpring: Spring = (args) => {
-    return this.props.expansionSpring!(args);
-  };
 
   private indirectDoLayoutAnimated = (
     a: DivetreeNode,

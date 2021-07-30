@@ -1,9 +1,9 @@
 import "jest";
-import { createSpring } from "../spring";
+import { Spring } from "../spring";
 
 describe("spring", () => {
   it("generally behaves as expected", () => {
-    const spring = createSpring({
+    const spring = new Spring({
       stepMillis: 10,
       precision: 1,
       stiffness: 9,
@@ -16,7 +16,7 @@ describe("spring", () => {
       { t: 10, s: [98, 102], v: [-5, 5] },
       { t: 100, s: [100, 100], v: [0, 0] },
     ].forEach((e) => {
-      const out = spring({
+      const out = spring.calculateResult({
         dtMillis: e.t * 1000,
         position: 250,
         velocity: 0,
