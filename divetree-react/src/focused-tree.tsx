@@ -36,9 +36,7 @@ interface State {
   focusId: Id | undefined;
   lastFocusTarget: number[];
   lastFocusId: Id | undefined;
-  isFirstAnimate: boolean;
   didUnmount: boolean;
-  lastT: number;
 }
 
 const DEFAULT_SPRING = createSpring({
@@ -72,11 +70,11 @@ export class FocusedTree extends React.Component<Props, State> {
     focusId: undefined,
     lastFocusTarget: [0, 0],
     lastFocusId: undefined,
-    isFirstAnimate: true,
     didUnmount: false,
-    lastT: 0,
   };
 
+  private lastT = 0;
+  private forceNextUpdate = true;
   private queue!: AnimationQueue<DivetreeNode, Interpolator>;
   private layoutCache = new LayoutCache();
 
@@ -107,17 +105,20 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   private animationCallback = (t: number) => {
-    const { isFirstAnimate, lastT: _lastT, didUnmount } = this.state;
-    const lastT = isFirstAnimate ? _lastT : t;
-    this.tick(t - lastT);
-    this.setState({ lastT: t });
+    const { didUnmount } = this.state;
+    this.tick(t - this.lastT);
+    this.lastT = t;
     if (!didUnmount) {
       requestAnimationFrame(this.animationCallback);
     }
   };
 
   private tick(dtMillis: number) {
-    const { progress, interval } = this.queue.tick(dtMillis);
+    const { progress, interval, didChange } = this.queue.tick(dtMillis);
+    if (!didChange && !this.forceNextUpdate) {
+      return;
+    }
+    this.forceNextUpdate = false;
     this.setState({ rects: interval(progress) });
 
     const { offset, offsetVelocity, focusTarget } = this.state;
@@ -136,6 +137,7 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   private updateFocusTarget({ tree, layoutConfig, focusedId }: Props) {
+    this.forceNextUpdate = true;
     let targetRect;
     if (focusedId !== undefined) {
       targetRect = doLayout(tree, layoutConfig!, this.layoutCache).find(
@@ -209,6 +211,7 @@ export class FocusedTree extends React.Component<Props, State> {
         !rect.transitionBound ||
         offsetRectsMayIntersect(rect.transitionBound, viewportTransitionBound),
     );
+    console.log("DEBUG FocusedTree.render");
     return (
       <Rects
         offset={offset}

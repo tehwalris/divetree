@@ -6,6 +6,7 @@ export class AnimationQueue<T, I> {
   private position: number = 2;
   private velocity: number = 0;
   private spring: Spring;
+  private pointsDidChange = true;
 
   constructor(
     statelessSpring: Spring,
@@ -22,29 +23,48 @@ export class AnimationQueue<T, I> {
 
   queueChange(target: T) {
     this.points[3] = target;
+    this.pointsDidChange = true;
     this.rebuildLastInterval();
   }
 
-  tick(dtMillis: number): { interval: I; progress: number } {
+  tick(dtMillis: number): {
+    interval: I;
+    progress: number;
+    didChange: boolean;
+  } {
     const hasQueued = this.points[3] !== undefined;
-    this.tickSpring(dtMillis, hasQueued ? 3 : 2);
+    const springDidChange = this.tickSpring(dtMillis, hasQueued ? 3 : 2);
+    let didChange = springDidChange || this.pointsDidChange;
+    this.pointsDidChange = false;
     if (hasQueued && this.position >= 2) {
+      didChange = true;
       this.shiftLeft();
       this.rebuildLastInterval();
     }
     const i = this.getCurrentIntervalIndex();
-    return { interval: this.intervals[i]!, progress: this.position - i };
+    return {
+      interval: this.intervals[i]!,
+      progress: this.position - i,
+      didChange,
+    };
   }
 
-  private tickSpring(dtMillis: number, target: number) {
+  private tickSpring(dtMillis: number, target: number): boolean {
     const updated = this.spring({
       position: this.position,
       velocity: this.velocity,
       dtMillis,
       target,
     });
+    if (
+      this.position === updated.position &&
+      this.velocity === updated.velocity
+    ) {
+      return false;
+    }
     this.position = updated.position;
     this.velocity = updated.velocity;
+    return true;
   }
 
   private shiftLeft() {

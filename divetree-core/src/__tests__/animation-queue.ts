@@ -2,7 +2,7 @@ import "jest";
 import { AnimationQueue } from "../animation-queue";
 
 // AnimationQueue should not care about dtMillis and velocity,
-// so arbitary values are used in these tests
+// so arbitrary values are used in these tests
 
 describe("AnimationQueue", () => {
   let buildInterval: <T>(a: T, b: T) => [T, T];
@@ -16,6 +16,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 1,
+      didChange: true,
     });
     expect(spring.mock.calls).toEqual([
       [{ position: 2, velocity: 0, target: 2, dtMillis: 0 }],
@@ -25,10 +26,11 @@ describe("AnimationQueue", () => {
   it("doesn't change state if spring doesn't move", () => {
     const spring = jest.fn().mockReturnValue({ position: 2, velocity: 0 });
     const queue = new AnimationQueue(spring, buildInterval, "a");
-    [1000, 0, 9999, 83888].forEach((dt) => {
+    [1000, 0, 9999, 83888].forEach((dt, i) => {
       expect(queue.tick(dt)).toEqual({
         interval: ["a", "a"],
         progress: 1,
+        didChange: i === 0,
       });
     });
   });
@@ -60,6 +62,7 @@ describe("AnimationQueue", () => {
       expect(queue.tick(e.dtMillis)).toEqual({
         interval: ["a", "a"],
         progress: e.progress,
+        didChange: true,
       });
       expect(spring).toHaveBeenLastCalledWith({
         target: 2,
@@ -77,6 +80,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 1.25,
+      didChange: true,
     });
   });
 
@@ -89,6 +93,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
       progress: 0.25,
+      didChange: true,
     });
   });
 
@@ -102,6 +107,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(3)).toEqual({
       interval: ["a", "c"],
       progress: 0.25,
+      didChange: true,
     });
     expect(spring).toHaveBeenLastCalledWith({
       position: 2,
@@ -114,6 +120,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(9)).toEqual({
       interval: ["a", "c"],
       progress: 1,
+      didChange: true,
     });
     expect(spring).toHaveBeenLastCalledWith({
       // position coordinate system shifted by -1
@@ -133,6 +140,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 0.75,
+      didChange: true,
     });
   });
 
@@ -149,6 +157,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
       progress: 1.25,
+      didChange: true,
     });
 
     // move past c
@@ -157,6 +166,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["b", "c"],
       progress: 1.25,
+      didChange: true,
     });
     expect(spring).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
@@ -170,6 +180,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "b"],
       progress: 0.5,
+      didChange: true,
     });
     expect(spring).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
@@ -183,6 +194,7 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["b", "c"],
       progress: 0.25,
+      didChange: true,
     });
   });
 
@@ -193,11 +205,13 @@ describe("AnimationQueue", () => {
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: 999998,
+      didChange: true,
     });
     spring.mockReturnValueOnce({ position: -999999, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: -999999,
+      didChange: true,
     });
   });
 });
