@@ -64,6 +64,10 @@ function lerpArray(a: number[], b: number[], t: number): number[] {
   return a.map((v, i) => (1 - t) * v + t * b[i]);
 }
 
+function arraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 export interface DrawRectScaling {
   precomputed: {
     size: number[];
@@ -152,6 +156,14 @@ export function makeInterpolators(
       const a = after.get(id);
       if (!b || !a) {
         throw new Error(`missing node: ${id}`);
+      }
+      if (arraysEqual(a.offset, b.offset) && arraysEqual(a.size, b.size)) {
+        return {
+          id,
+          lifecycle: fromConstant(0),
+          withoutScaling: fromConstant({ size: a.size, offset: a.offset }),
+          transitionBound: transitionBounds[i],
+        };
       }
       return {
         id,

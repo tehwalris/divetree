@@ -4,11 +4,15 @@ import {
   drawRectFromInterpolator,
   DrawRectInterpolator,
   Id,
+  MaybeConstantKind,
+  MaybeConstant,
 } from "divetree-core";
 import { Focus } from "./interfaces";
 import { roundPixel } from "./round-pixel";
 import { SpringPath } from "divetree-core";
 import { useEffect, useState } from "react";
+
+const progressProperty: string = "--divetree-rects-progress";
 
 export type GetContent = (id: Id) => React.ReactElement<unknown> | null;
 
@@ -88,6 +92,27 @@ function toFocusProgress(progress: number, target: number) {
   return 1 - Math.min(1, Math.abs(progress - target));
 }
 
+function progressLerp(a: string | number, b: string | number): string {
+  const t = `var(${progressProperty})`;
+  return `calc((1 - ${t}) * (${a}) + ${t} * (${b}))`;
+}
+
+function fromMaybeConstant<T, O>(
+  maybe: MaybeConstant<T>,
+  fromValue: (v: T) => O,
+  fromLinearFunction: (a: T, b: T) => O,
+): O {
+  if (maybe.kind === MaybeConstantKind.Constant) {
+    return fromValue(maybe.value);
+  } else {
+    return fromLinearFunction(maybe.from, maybe.to);
+  }
+}
+
+function asRoundedPx(v: number): string {
+  return `${roundPixel(v)}px`;
+}
+
 export const Rects = ({
   rectInterpolators,
   oldFocusId,
@@ -126,9 +151,15 @@ export const Rects = ({
   }, [progressPath]);
 
   return (
-    <>
-      {rectInterpolators.map((rectInterpolator) => {
-        const e = drawRectFromInterpolator(rectInterpolator, progress);
+    <div style={{ [progressProperty]: progress }}>
+      {rectInterpolators.map((r) => {
+        const absLifecycle = fromMaybeConstant<number, string | number>(
+          r.lifecycle,
+          (v) => Math.abs(v),
+          (a, b) => progressLerp(Math.abs(a), Math.abs(b)),
+        );
+
+        const e = drawRectFromInterpolator(r, progress);
 
         let focusProgress: number | undefined;
         if (e.id === oldFocusId && e.id === newFocusId) {
@@ -139,12 +170,34 @@ export const Rects = ({
           focusProgress = toFocusProgress(progress, 1);
         }
 
-        let transform = `translate(
-          ${roundPixel(e.withoutScaling.offset[0])}px,
-          ${roundPixel(e.withoutScaling.offset[1])}px
-        )`;
-        if (e.withScaling && e.withScaling.info.scale !== 1) {
-          transform = `scale(${e.withScaling.info.scale}) ${transform}`;
+        let transform = fromMaybeConstant(
+          r.withoutScaling,
+          (v) =>
+            `translate(
+               ${asRoundedPx(v.offset[0])},
+               ${asRoundedPx(v.offset[1])}
+             )`,
+          (a, b) =>
+            `translate(
+               ${progressLerp(
+                 asRoundedPx(a.offset[0]),
+                 asRoundedPx(b.offset[0]),
+               )},
+               ${progressLerp(
+                 asRoundedPx(a.offset[1]),
+                 asRoundedPx(b.offset[1]),
+               )}
+             )`,
+        );
+        if (r.withScaling) {
+          transform =
+            fromMaybeConstant(
+              r.withScaling,
+              (v) => (v.info.scale === 1 ? "" : `scale(${v.info.scale})`),
+              (a, b) => `scale(${progressLerp(a.info.scale, b.info.scale)})`,
+            ) +
+            " " +
+            transform;
         }
         return (
           <div
@@ -159,7 +212,7 @@ export const Rects = ({
                 e.withScaling.info.origin
                   .map((v) => roundPixel(v) + "px")
                   .join(" "),
-              opacity: 1 - Math.abs(e.lifecycle),
+              opacity: `calc(1 - ${absLifecycle})`,
               zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
               background: getFocusColor(
                 focusProgress ?? 0,
@@ -181,6 +234,6 @@ export const Rects = ({
           </div>
         );
       })}
-    </>
+    </div>
   );
 };
