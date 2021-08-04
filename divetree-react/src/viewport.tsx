@@ -16,6 +16,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: "relative",
     border: "1px solid black",
     overflow: "hidden",
+    contain: "strict",
   },
 };
 

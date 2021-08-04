@@ -30,6 +30,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: "absolute",
     border: "1px solid black",
     overflow: "hidden",
+    contain: "strict",
+    willChange: "transform, opacity",
   },
 };
 
@@ -97,7 +99,6 @@ export const Rects = ({ rects, focuses, getContent, getStyle }: Props) => (
               e.withScaling.info.origin
                 .map((v) => roundPixel(v) + "px")
                 .join(" "),
-            willChange: "transform, opacity",
             opacity: 1 - Math.abs(e.lifecycle),
             zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
             background: getFocusColor(
