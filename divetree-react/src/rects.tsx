@@ -1,7 +1,14 @@
 import * as React from "react";
-import { DrawRect, Id } from "divetree-core";
+import {
+  DrawRect,
+  drawRectFromInterpolator,
+  DrawRectInterpolator,
+  Id,
+} from "divetree-core";
 import { Focus } from "./interfaces";
 import { roundPixel } from "./round-pixel";
+import { SpringPath } from "divetree-core";
+import { useEffect, useState } from "react";
 
 export type GetContent = (id: Id) => React.ReactElement<unknown> | null;
 
@@ -14,10 +21,11 @@ export interface RectStyle {
 export type GetStyle = (id: Id, focused: boolean) => RectStyle;
 
 interface Props {
-  rects: DrawRect[];
+  rectInterpolators: DrawRectInterpolator[];
   focuses: Focus[];
   getContent: GetContent;
   getStyle?: GetStyle;
+  progressPath: SpringPath;
 }
 
 const DEFAULT_GET_STYLE: GetStyle = (id, focused) =>
@@ -75,48 +83,88 @@ function getFocusBorderColor(
   );
 }
 
-export const Rects = ({ rects, focuses, getContent, getStyle }: Props) => (
-  <>
-    {rects.map((e) => {
-      const focus = focuses.find((f) => f.id === e.id);
-      let transform = `translate(
+export const Rects = ({
+  rectInterpolators,
+  focuses,
+  getContent,
+  getStyle,
+  progressPath,
+}: Props) => {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    let shouldStop = false;
+
+    let startT: number | undefined;
+    function animationCallback() {
+      if (shouldStop) {
+        return;
+      }
+
+      const t = window.performance.now();
+      if (startT === undefined) {
+        startT = t;
+      }
+      const dt = t - startT;
+
+      const { result, endOfPath } = progressPath.getResult(dt);
+      setProgress(result.position);
+
+      requestAnimationFrame(animationCallback);
+    }
+
+    animationCallback();
+
+    return () => {
+      shouldStop = true;
+    };
+  }, [progressPath]);
+
+  console.log("DEBUG Rects.render", progress, progressPath.getDurationMillis());
+  return (
+    <>
+      {rectInterpolators.map((rectInterpolator) => {
+        const e = drawRectFromInterpolator(rectInterpolator, progress);
+
+        const focus = focuses.find((f) => f.id === e.id);
+        let transform = `translate(
           ${roundPixel(e.withoutScaling.offset[0])}px,
           ${roundPixel(e.withoutScaling.offset[1])}px
         )`;
-      if (e.withScaling && e.withScaling.info.scale !== 1) {
-        transform = `scale(${e.withScaling.info.scale}) ${transform}`;
-      }
-      return (
-        <div
-          key={e.id}
-          style={{
-            ...styles.rect,
-            width: e.withoutScaling.size[0],
-            height: e.withoutScaling.size[1],
-            transform,
-            transformOrigin:
-              e.withScaling &&
-              e.withScaling.info.origin
-                .map((v) => roundPixel(v) + "px")
-                .join(" "),
-            opacity: 1 - Math.abs(e.lifecycle),
-            zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
-            background: getFocusColor(
-              focus ? Math.abs(focus.progress) : 0,
-              e.id,
-              getStyle || DEFAULT_GET_STYLE,
-            ),
-            borderColor: getFocusBorderColor(
-              focus ? Math.abs(focus.progress) : 0,
-              e.id,
-              getStyle || DEFAULT_GET_STYLE,
-            ),
-            ...(getStyle || DEFAULT_GET_STYLE)(e.id, !!focus).extra,
-          }}
-        >
-          {getContent(e.id)}
-        </div>
-      );
-    })}
-  </>
-);
+        if (e.withScaling && e.withScaling.info.scale !== 1) {
+          transform = `scale(${e.withScaling.info.scale}) ${transform}`;
+        }
+        return (
+          <div
+            key={e.id}
+            style={{
+              ...styles.rect,
+              width: e.withoutScaling.size[0],
+              height: e.withoutScaling.size[1],
+              transform,
+              transformOrigin:
+                e.withScaling &&
+                e.withScaling.info.origin
+                  .map((v) => roundPixel(v) + "px")
+                  .join(" "),
+              opacity: 1 - Math.abs(e.lifecycle),
+              zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
+              background: getFocusColor(
+                focus ? Math.abs(focus.progress) : 0,
+                e.id,
+                getStyle || DEFAULT_GET_STYLE,
+              ),
+              borderColor: getFocusBorderColor(
+                focus ? Math.abs(focus.progress) : 0,
+                e.id,
+                getStyle || DEFAULT_GET_STYLE,
+              ),
+              ...(getStyle || DEFAULT_GET_STYLE)(e.id, !!focus).extra,
+            }}
+          >
+            {getContent(e.id)}
+          </div>
+        );
+      })}
+    </>
+  );
+};

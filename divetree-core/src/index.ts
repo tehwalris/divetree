@@ -11,7 +11,7 @@ export {
   Config as LayoutConfig,
   LayoutCache,
 } from "./entry-points";
-export { Spring } from "./spring";
+export * from "./spring";
 export { AnimationQueue } from "./animation-queue";
 export * from "./nav";
 export { unionOffsetRects, offsetRectsMayIntersect } from "./geometry";

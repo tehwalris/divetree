@@ -12,13 +12,12 @@ import {
   unionOffsetRects,
   offsetRectsMayIntersect,
   LayoutCache,
-  drawRectFromInterpolator,
+  SpringPath,
 } from "divetree-core";
 import { Rects, GetContent, GetStyle } from "./rects";
 import { Focus } from "./interfaces";
 import * as R from "ramda";
 import { Viewport } from "./viewport";
-import { SpringPath } from "../../divetree-core/lib/spring";
 
 interface Props {
   expansionSpring?: Spring;
@@ -32,7 +31,7 @@ interface Props {
 
 interface State {
   rectInterpolators: DrawRectInterpolator[];
-  rectInterpolatorProgress: number;
+  rectInterpolatorProgressPath: SpringPath;
   focusTarget: number[];
   focusId: Id | undefined;
   lastFocusTarget: number[];
@@ -67,7 +66,10 @@ export class FocusedTree extends React.Component<Props, State> {
 
   state: State = {
     rectInterpolators: [],
-    rectInterpolatorProgress: 0,
+    rectInterpolatorProgressPath: new SpringPath(
+      [{ position: 2, velocity: 0 }],
+      5,
+    ),
     focusTarget: [0, 0],
     focusId: undefined,
     lastFocusTarget: [0, 0],
@@ -79,7 +81,9 @@ export class FocusedTree extends React.Component<Props, State> {
     didUnmount: false,
   };
 
-  private lastT = 0;
+  private lastT = 0; // TODO
+  private rectInterpolatorLastT = 0;
+  private rectInterpolatorTimeoutHandle: number | undefined;
   private forceNextUpdate = true;
   private queue!: AnimationQueue<DivetreeNode, DrawRectInterpolator[]>;
   private layoutCache = new LayoutCache();
@@ -91,47 +95,26 @@ export class FocusedTree extends React.Component<Props, State> {
       this.props.tree,
     );
 
-    this.tick(0);
+    this.tickQueue();
+    this.updateRectInterpolatorProgressPath(true);
     this.updateFocusTarget(this.props);
-    window.requestAnimationFrame(this.animationCallback);
   }
 
   componentWillUnmount() {
+    clearTimeout(this.rectInterpolatorTimeoutHandle);
     this.setState({ didUnmount: true });
   }
 
   // TODO re-queue on layout config change, otherwise it will be ignored
   UNSAFE_componentWillReceiveProps(nextProps: Props) {
     if (nextProps.tree !== this.props.tree) {
+      const didChange = this.tickQueue();
       this.queue.queueChange(nextProps.tree);
+      this.updateRectInterpolatorProgressPath(didChange);
       this.updateFocusTarget(nextProps);
     } else if (nextProps.focusedId !== this.props.focusedId) {
       this.updateFocusTarget(nextProps);
     }
-  }
-
-  private animationCallback = (t: number) => {
-    const { didUnmount } = this.state;
-    this.tick(t - this.lastT);
-    this.lastT = t;
-    if (!didUnmount) {
-      requestAnimationFrame(this.animationCallback);
-    }
-  };
-
-  private tick(dtMillis: number) {
-    const {
-      progress,
-      interval,
-      didChange: queueDidChange,
-    } = this.queue.tick(dtMillis);
-    if (queueDidChange || this.forceNextUpdate) {
-      this.setState({
-        rectInterpolatorProgress: progress,
-        rectInterpolators: interval,
-      });
-    }
-    this.forceNextUpdate = false;
   }
 
   private updateFocusTarget({ tree, layoutConfig, focusedId }: Props) {
@@ -186,6 +169,36 @@ export class FocusedTree extends React.Component<Props, State> {
     }
   }
 
+  private tickQueue(): boolean {
+    const t = window.performance.now();
+    const dt = t - this.rectInterpolatorLastT;
+    this.rectInterpolatorLastT = t;
+    const { didChange } = this.queue.tick(dt);
+    return didChange;
+  }
+
+  private updateRectInterpolatorProgressPath(didChange: boolean) {
+    const { interval, progressPath, willChange } = this.queue.calculatePath();
+    console.log(
+      "DEBUG rectInterpolatorProgressPath",
+      progressPath.getDurationMillis(),
+      willChange,
+      didChange,
+    );
+    if (willChange || didChange || this.forceNextUpdate) {
+      this.setState({
+        rectInterpolators: interval,
+        rectInterpolatorProgressPath: progressPath,
+      });
+      this.forceNextUpdate = false;
+      clearTimeout(this.rectInterpolatorTimeoutHandle);
+      this.rectInterpolatorTimeoutHandle = setTimeout(
+        () => this.updateRectInterpolatorProgressPath(this.tickQueue()),
+        progressPath.getDurationMillis(),
+      );
+    }
+  }
+
   private indirectDoLayoutAnimated = (
     a: DivetreeNode,
     b: DivetreeNode,
@@ -234,7 +247,7 @@ export class FocusedTree extends React.Component<Props, State> {
   render() {
     const {
       rectInterpolators,
-      rectInterpolatorProgress,
+      rectInterpolatorProgressPath,
       focusTarget,
       lastFocusTarget,
       focusPath,
@@ -259,10 +272,6 @@ export class FocusedTree extends React.Component<Props, State> {
           viewportTransitionBound,
         ),
     );
-    const possiblyVisibleRects = possiblyVisibleRectInterpolators.map(
-      (interpolator) =>
-        drawRectFromInterpolator(interpolator, rectInterpolatorProgress),
-    );
 
     console.log("DEBUG FocusedTree.render");
     return (
@@ -273,10 +282,11 @@ export class FocusedTree extends React.Component<Props, State> {
         offsetPath={focusPath}
       >
         <Rects
-          rects={possiblyVisibleRects}
+          rectInterpolators={possiblyVisibleRectInterpolators}
           focuses={this.getFocuses()}
           getContent={this.props.getContent}
           getStyle={this.props.getStyle}
+          progressPath={rectInterpolatorProgressPath}
         />
       </Viewport>
     );
