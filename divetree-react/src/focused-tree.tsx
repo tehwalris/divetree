@@ -89,6 +89,10 @@ export class FocusedTree extends React.Component<Props, State> {
   private forceNextUpdate = true;
   private queue!: AnimationQueue<QueuePoint, QueueInterval>;
   private layoutCache = new LayoutCache();
+  private intervalCache = new WeakMap<
+    QueuePoint,
+    WeakMap<QueuePoint, QueueInterval>
+  >();
 
   componentDidMount() {
     this.queue = new AnimationQueue(
@@ -198,7 +202,12 @@ export class FocusedTree extends React.Component<Props, State> {
     a: QueuePoint,
     b: QueuePoint,
   ): QueueInterval => {
-    return {
+    const cachedInterval = this.intervalCache.get(a)?.get(b);
+    if (cachedInterval) {
+      return cachedInterval;
+    }
+
+    const interval: QueueInterval = {
       focusedId: { a: a.focusedId, b: b.focusedId },
       rectInterpolators: doLayoutAnimated(
         a.tree,
@@ -207,6 +216,11 @@ export class FocusedTree extends React.Component<Props, State> {
         this.layoutCache,
       ),
     };
+
+    const innerCache = this.intervalCache.get(a) || new WeakMap();
+    innerCache.set(b, interval);
+    this.intervalCache.set(a, innerCache);
+    return interval;
   };
 
   render() {
