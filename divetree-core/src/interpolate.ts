@@ -2,6 +2,67 @@ import { Id } from "./interfaces/input";
 import { InternalOutputNode as Node } from "./interfaces/output";
 import { AnimationGroup, AnimationKind } from "./plan-animation";
 import { unionOffsetRects } from "./geometry";
+import { unreachable } from "./unreachable";
+
+export enum MaybeConstantKind {
+  Constant,
+  Function,
+}
+
+export interface InterpolationConstant<T> {
+  kind: MaybeConstantKind.Constant;
+  value: T;
+}
+
+export interface InterpolationLinearFunction<T> {
+  kind: MaybeConstantKind.Function;
+  from: T;
+  to: T;
+}
+
+export type MaybeConstant<T> =
+  | InterpolationConstant<T>
+  | InterpolationLinearFunction<T>;
+
+function fromConstant<T>(value: T): InterpolationConstant<T> {
+  return { kind: MaybeConstantKind.Constant, value };
+}
+
+function fromFunction<T>(
+  getValue: (t: number) => T,
+): InterpolationLinearFunction<T> {
+  return {
+    kind: MaybeConstantKind.Function,
+    from: getValue(0),
+    to: getValue(1),
+  };
+}
+
+function fromMaybeConstant<T>(
+  maybe: MaybeConstant<T>,
+  t: number,
+  interpolate: (a: T, b: T, t: number) => T,
+): T {
+  switch (maybe.kind) {
+    case MaybeConstantKind.Constant:
+      return maybe.value;
+    case MaybeConstantKind.Function:
+      return interpolate(maybe.from, maybe.to, t);
+    default:
+      return unreachable(maybe);
+  }
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return (1 - t) * a + t * b;
+}
+
+function lerpArray(a: number[], b: number[], t: number): number[] {
+  if (a.length !== b.length) {
+    throw new Error("a and b must have same length");
+  }
+  return a.map((v, i) => (1 - t) * v + t * b[i]);
+}
 
 export interface DrawRectScaling {
   precomputed: {
@@ -16,9 +77,9 @@ export interface DrawRectScaling {
 
 export interface DrawRectInterpolator {
   id: Id;
-  lifecycle: (t: number) => number;
-  withoutScaling: (t: number) => DrawRect["withoutScaling"];
-  withScaling?: (t: number) => NonNullable<DrawRect["withScaling"]>;
+  lifecycle: MaybeConstant<number>;
+  withoutScaling: MaybeConstant<DrawRect["withoutScaling"]>;
+  withScaling?: MaybeConstant<NonNullable<DrawRect["withScaling"]>>;
   transitionBound?: DrawRect["transitionBound"];
 }
 
@@ -47,9 +108,27 @@ export function drawRectFromInterpolator(
 ): DrawRect {
   return {
     id: interpolator.id,
-    lifecycle: interpolator.lifecycle(t),
-    withoutScaling: interpolator.withoutScaling(t),
-    withScaling: interpolator.withScaling?.(t),
+    lifecycle: fromMaybeConstant(interpolator.lifecycle, t, lerp),
+    withoutScaling: fromMaybeConstant(
+      interpolator.withoutScaling,
+      t,
+      (a, b, t) => ({
+        size: lerpArray(a.size, b.size, t),
+        offset: lerpArray(a.offset, b.offset, t),
+      }),
+    ),
+    withScaling:
+      interpolator.withScaling &&
+      fromMaybeConstant(interpolator.withScaling, t, (a, b, t) => ({
+        precomputed: {
+          size: lerpArray(a.precomputed.size, b.precomputed.size, t),
+          offset: lerpArray(a.precomputed.offset, b.precomputed.offset, t),
+        },
+        info: {
+          scale: lerp(a.info.scale, b.info.scale, t),
+          origin: lerpArray(a.info.origin, b.info.origin, t),
+        },
+      })),
     transitionBound: interpolator.transitionBound,
   };
 }
@@ -68,7 +147,7 @@ export function makeInterpolators(
       }
       return unionOffsetRects([a, b]);
     });
-    return animation.content.map((id, i) => {
+    return animation.content.map((id, i): DrawRectInterpolator => {
       const b = before.get(id);
       const a = after.get(id);
       if (!b || !a) {
@@ -76,11 +155,11 @@ export function makeInterpolators(
       }
       return {
         id,
-        lifecycle: () => 0,
-        withoutScaling: (t) => ({
+        lifecycle: fromConstant(0),
+        withoutScaling: fromFunction((t) => ({
           size: mixVector(b.size, a.size, t),
           offset: mixVector(b.offset, a.offset, t),
-        }),
+        })),
         transitionBound: transitionBounds[i],
       };
     });
@@ -98,7 +177,7 @@ export function makeInterpolators(
           getCenterLeft(after.get(animation.parent!)!),
           t,
         ));
-    return animation.content.map((id) => {
+    return animation.content.map((id): DrawRectInterpolator => {
       const e = target.get(id);
       if (!e) {
         throw new Error(`missing node: ${id}`);
@@ -106,12 +185,12 @@ export function makeInterpolators(
       const origin = _origin || (() => getCenterLeft(e));
       return {
         id,
-        lifecycle,
-        withoutScaling: (t) => ({
+        lifecycle: fromFunction(lifecycle),
+        withoutScaling: fromConstant({
           size: e.size,
           offset: e.offset,
         }),
-        withScaling: (t) => ({
+        withScaling: fromFunction((t) => ({
           precomputed: {
             size: mixVector([0, 0], e.size, finalMix(t)),
             offset: mixVector(origin(t), e.offset, finalMix(t)),
@@ -120,7 +199,7 @@ export function makeInterpolators(
             scale: finalMix(t),
             origin: origin(t),
           },
-        }),
+        })),
       };
     });
   };

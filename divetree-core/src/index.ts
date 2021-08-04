@@ -4,6 +4,10 @@ export {
   DrawRect,
   DrawRectInterpolator,
   drawRectFromInterpolator,
+  MaybeConstantKind,
+  InterpolationConstant,
+  InterpolationLinearFunction,
+  MaybeConstant,
 } from "./interpolate";
 export {
   doLayout,
