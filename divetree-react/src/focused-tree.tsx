@@ -1,22 +1,19 @@
-import * as React from "react";
 import {
-  Spring,
-  DrawRect,
   AnimationQueue,
-  RootNode as DivetreeNode,
-  DrawRectInterpolator,
-  LayoutConfig,
   doLayout,
   doLayoutAnimated,
+  DrawRectInterpolator,
   Id,
-  unionOffsetRects,
-  offsetRectsMayIntersect,
   LayoutCache,
+  LayoutConfig,
+  offsetRectsMayIntersect,
+  RootNode as DivetreeNode,
+  Spring,
   SpringPath,
+  unionOffsetRects,
 } from "divetree-core";
-import { Rects, GetContent, GetStyle } from "./rects";
-import { Focus } from "./interfaces";
-import * as R from "ramda";
+import * as React from "react";
+import { GetContent, GetStyle, Rects } from "./rects";
 import { Viewport } from "./viewport";
 
 interface Props {
@@ -30,12 +27,10 @@ interface Props {
 }
 
 interface State {
-  rectInterpolators: DrawRectInterpolator[];
-  rectInterpolatorProgressPath: SpringPath;
+  queueInterval: QueueInterval;
+  queueProgressPath: SpringPath;
   focusTarget: number[];
-  focusId: Id | undefined;
   lastFocusTarget: number[];
-  lastFocusId: Id | undefined;
   focusPath: SpringPath[];
   focusPathStartedAt: number;
   didUnmount: boolean;
@@ -57,6 +52,16 @@ const DEFAULT_LAYOUT_CONFIG = {
   },
 };
 
+interface QueuePoint {
+  focusedId: Id | undefined;
+  tree: DivetreeNode;
+}
+
+interface QueueInterval {
+  focusedId: { a: Id | undefined; b: Id | undefined };
+  rectInterpolators: DrawRectInterpolator[];
+}
+
 export class FocusedTree extends React.Component<Props, State> {
   static defaultProps: Partial<Props> = {
     expansionSpring: DEFAULT_SPRING,
@@ -65,15 +70,13 @@ export class FocusedTree extends React.Component<Props, State> {
   };
 
   state: State = {
-    rectInterpolators: [],
-    rectInterpolatorProgressPath: new SpringPath(
-      [{ position: 2, velocity: 0 }],
-      5,
-    ),
+    queueInterval: {
+      focusedId: { a: undefined, b: undefined },
+      rectInterpolators: [],
+    },
+    queueProgressPath: new SpringPath([{ position: 2, velocity: 0 }], 5),
     focusTarget: [0, 0],
-    focusId: undefined,
     lastFocusTarget: [0, 0],
-    lastFocusId: undefined,
     focusPath: [0, 1].map(
       () => new SpringPath([{ position: 0, velocity: 0 }], 5),
     ),
@@ -81,18 +84,17 @@ export class FocusedTree extends React.Component<Props, State> {
     didUnmount: false,
   };
 
-  private lastT = 0; // TODO
-  private rectInterpolatorLastT = 0;
-  private rectInterpolatorTimeoutHandle: number | undefined;
+  private queueLastT = 0;
+  private queueTimeoutHandle: number | undefined;
   private forceNextUpdate = true;
-  private queue!: AnimationQueue<DivetreeNode, DrawRectInterpolator[]>;
+  private queue!: AnimationQueue<QueuePoint, QueueInterval>;
   private layoutCache = new LayoutCache();
 
   componentDidMount() {
     this.queue = new AnimationQueue(
       this.props.expansionSpring!,
       this.indirectDoLayoutAnimated,
-      this.props.tree,
+      { focusedId: this.props.focusedId, tree: this.props.tree },
     );
 
     this.tickQueue();
@@ -101,18 +103,22 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   componentWillUnmount() {
-    clearTimeout(this.rectInterpolatorTimeoutHandle);
+    clearTimeout(this.queueTimeoutHandle);
     this.setState({ didUnmount: true });
   }
 
   // TODO re-queue on layout config change, otherwise it will be ignored
   UNSAFE_componentWillReceiveProps(nextProps: Props) {
-    if (nextProps.tree !== this.props.tree) {
+    if (
+      nextProps.tree !== this.props.tree ||
+      nextProps.focusedId !== this.props.focusedId
+    ) {
       const didChange = this.tickQueue();
-      this.queue.queueChange(nextProps.tree);
+      this.queue.queueChange({
+        focusedId: nextProps.focusedId,
+        tree: nextProps.tree,
+      });
       this.updateRectInterpolatorProgressPath(didChange);
-      this.updateFocusTarget(nextProps);
-    } else if (nextProps.focusedId !== this.props.focusedId) {
       this.updateFocusTarget(nextProps);
     }
   }
@@ -142,7 +148,6 @@ export class FocusedTree extends React.Component<Props, State> {
           target: -e,
         });
       });
-      console.log("DEBUG focusPath", focusPath);
       return focusPath;
     };
 
@@ -151,18 +156,14 @@ export class FocusedTree extends React.Component<Props, State> {
       const center = targetRect.offset.map((e, i) => size[i] / 2 + e);
       this.setState({
         focusTarget: center,
-        focusId: focusedId,
         lastFocusTarget: this.state.focusTarget,
-        lastFocusId: this.state.focusId,
         focusPath: calculateFocusPath(center),
         focusPathStartedAt: window.performance.now(),
       });
     } else {
       this.setState({
         focusTarget: this.state.focusTarget,
-        focusId: undefined,
         lastFocusTarget: this.state.focusTarget,
-        lastFocusId: this.state.focusId,
         focusPath: calculateFocusPath(this.state.focusTarget),
         focusPathStartedAt: window.performance.now(),
       });
@@ -171,8 +172,8 @@ export class FocusedTree extends React.Component<Props, State> {
 
   private tickQueue(): boolean {
     const t = window.performance.now();
-    const dt = t - this.rectInterpolatorLastT;
-    this.rectInterpolatorLastT = t;
+    const dt = t - this.queueLastT;
+    this.queueLastT = t;
     const { didChange } = this.queue.tick(dt);
     return didChange;
   }
@@ -187,12 +188,12 @@ export class FocusedTree extends React.Component<Props, State> {
     );
     if (willChange || didChange || this.forceNextUpdate) {
       this.setState({
-        rectInterpolators: interval,
-        rectInterpolatorProgressPath: progressPath,
+        queueInterval: interval,
+        queueProgressPath: progressPath,
       });
       this.forceNextUpdate = false;
-      clearTimeout(this.rectInterpolatorTimeoutHandle);
-      this.rectInterpolatorTimeoutHandle = setTimeout(
+      clearTimeout(this.queueTimeoutHandle);
+      this.queueTimeoutHandle = setTimeout(
         () => this.updateRectInterpolatorProgressPath(this.tickQueue()),
         progressPath.getDurationMillis(),
       );
@@ -200,54 +201,24 @@ export class FocusedTree extends React.Component<Props, State> {
   }
 
   private indirectDoLayoutAnimated = (
-    a: DivetreeNode,
-    b: DivetreeNode,
-  ): DrawRectInterpolator[] => {
-    return doLayoutAnimated(a, b, this.props.layoutConfig!, this.layoutCache);
+    a: QueuePoint,
+    b: QueuePoint,
+  ): QueueInterval => {
+    return {
+      focusedId: { a: a.focusedId, b: b.focusedId },
+      rectInterpolators: doLayoutAnimated(
+        a.tree,
+        b.tree,
+        this.props.layoutConfig!,
+        this.layoutCache,
+      ),
+    };
   };
-
-  private getOffset(): number[] {
-    const { focusPath, focusPathStartedAt } = this.state;
-    let endOfAnimation = true;
-    const offset = focusPath.map((p) => {
-      const { result, endOfPath } = p.getResult(
-        window.performance.now() - focusPathStartedAt,
-      );
-      if (!endOfPath) {
-        endOfAnimation = false;
-      }
-      return result.position;
-    });
-    if (!endOfAnimation) {
-      this.forceNextUpdate = true;
-    }
-    return offset;
-  }
-
-  private getFocuses(): Focus[] {
-    const { focusId, lastFocusId, focusTarget, lastFocusTarget } = this.state;
-    const offset = this.getOffset();
-    const getDistance = R.compose(
-      Math.sqrt,
-      R.sum,
-      R.map((e: number) => e ** 2),
-      R.zipWith<number, number, number>(R.subtract),
-    );
-    const totalDistance = getDistance(focusTarget, lastFocusTarget);
-    const remainingDistance = getDistance(focusTarget, offset.map(R.negate));
-    if (totalDistance === 0) {
-      return [{ id: focusId, progress: 1 }];
-    }
-    return [
-      { id: focusId, progress: totalDistance - remainingDistance },
-      { id: lastFocusId, progress: remainingDistance },
-    ].map((e) => ({ ...e, progress: e.progress / totalDistance }));
-  }
 
   render() {
     const {
-      rectInterpolators,
-      rectInterpolatorProgressPath,
+      queueInterval,
+      queueProgressPath,
       focusTarget,
       lastFocusTarget,
       focusPath,
@@ -264,14 +235,15 @@ export class FocusedTree extends React.Component<Props, State> {
       })),
     );
 
-    const possiblyVisibleRectInterpolators = rectInterpolators.filter(
-      (interpolator) =>
-        !interpolator.transitionBound ||
-        offsetRectsMayIntersect(
-          interpolator.transitionBound,
-          viewportTransitionBound,
-        ),
-    );
+    const possiblyVisibleRectInterpolators =
+      queueInterval.rectInterpolators.filter(
+        (interpolator) =>
+          !interpolator.transitionBound ||
+          offsetRectsMayIntersect(
+            interpolator.transitionBound,
+            viewportTransitionBound,
+          ),
+      );
 
     console.log("DEBUG FocusedTree.render");
     return (
@@ -283,10 +255,11 @@ export class FocusedTree extends React.Component<Props, State> {
       >
         <Rects
           rectInterpolators={possiblyVisibleRectInterpolators}
-          focuses={this.getFocuses()}
+          oldFocusId={queueInterval.focusedId.a}
+          newFocusId={queueInterval.focusedId.b}
           getContent={this.props.getContent}
           getStyle={this.props.getStyle}
-          progressPath={rectInterpolatorProgressPath}
+          progressPath={queueProgressPath}
         />
       </Viewport>
     );

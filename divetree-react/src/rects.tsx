@@ -22,7 +22,8 @@ export type GetStyle = (id: Id, focused: boolean) => RectStyle;
 
 interface Props {
   rectInterpolators: DrawRectInterpolator[];
-  focuses: Focus[];
+  oldFocusId: Id | undefined;
+  newFocusId: Id | undefined;
   getContent: GetContent;
   getStyle?: GetStyle;
   progressPath: SpringPath;
@@ -83,9 +84,14 @@ function getFocusBorderColor(
   );
 }
 
+function toFocusProgress(progress: number, target: number) {
+  return 1 - Math.min(1, Math.abs(progress - target));
+}
+
 export const Rects = ({
   rectInterpolators,
-  focuses,
+  oldFocusId,
+  newFocusId,
   getContent,
   getStyle,
   progressPath,
@@ -125,7 +131,15 @@ export const Rects = ({
       {rectInterpolators.map((rectInterpolator) => {
         const e = drawRectFromInterpolator(rectInterpolator, progress);
 
-        const focus = focuses.find((f) => f.id === e.id);
+        let focusProgress: number | undefined;
+        if (e.id === oldFocusId && e.id === newFocusId) {
+          focusProgress = 1;
+        } else if (e.id === oldFocusId) {
+          focusProgress = toFocusProgress(progress, 0);
+        } else if (e.id === newFocusId) {
+          focusProgress = toFocusProgress(progress, 1);
+        }
+
         let transform = `translate(
           ${roundPixel(e.withoutScaling.offset[0])}px,
           ${roundPixel(e.withoutScaling.offset[1])}px
@@ -149,16 +163,19 @@ export const Rects = ({
               opacity: 1 - Math.abs(e.lifecycle),
               zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
               background: getFocusColor(
-                focus ? Math.abs(focus.progress) : 0,
+                focusProgress ?? 0,
                 e.id,
                 getStyle || DEFAULT_GET_STYLE,
               ),
               borderColor: getFocusBorderColor(
-                focus ? Math.abs(focus.progress) : 0,
+                focusProgress ?? 0,
                 e.id,
                 getStyle || DEFAULT_GET_STYLE,
               ),
-              ...(getStyle || DEFAULT_GET_STYLE)(e.id, !!focus).extra,
+              ...(getStyle || DEFAULT_GET_STYLE)(
+                e.id,
+                focusProgress !== undefined,
+              ).extra,
             }}
           >
             {getContent(e.id)}
