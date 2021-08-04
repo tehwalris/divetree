@@ -125,7 +125,6 @@ export const Rects = ({
     };
   }, [progressPath]);
 
-  console.log("DEBUG Rects.render", progress, progressPath.getDurationMillis());
   return (
     <>
       {rectInterpolators.map((rectInterpolator) => {

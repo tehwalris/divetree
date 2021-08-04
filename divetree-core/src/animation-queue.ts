@@ -58,12 +58,6 @@ export class AnimationQueue<T, I> {
         firstInterval = interval;
       }
       if (elements.length && (!didChange || didShift)) {
-        console.log(
-          "DEBUG calculatePath stop",
-          elements.length,
-          didChange,
-          didShift,
-        );
         break;
       }
       elements.push({ position: progress, velocity: 0 });

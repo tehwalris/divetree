@@ -180,12 +180,6 @@ export class FocusedTree extends React.Component<Props, State> {
 
   private updateRectInterpolatorProgressPath(didChange: boolean) {
     const { interval, progressPath, willChange } = this.queue.calculatePath();
-    console.log(
-      "DEBUG rectInterpolatorProgressPath",
-      progressPath.getDurationMillis(),
-      willChange,
-      didChange,
-    );
     if (willChange || didChange || this.forceNextUpdate) {
       this.setState({
         queueInterval: interval,
@@ -245,7 +239,6 @@ export class FocusedTree extends React.Component<Props, State> {
           ),
       );
 
-    console.log("DEBUG FocusedTree.render");
     return (
       <Viewport
         width={viewport.width}
