@@ -60,13 +60,6 @@ function indexTreeNodesById(
   return out;
 }
 
-function treeToIds(
-  root: Node,
-  kind: NodeKind.TightLeaf | NodeKind.Loose,
-): Id[] {
-  return [...indexTreeNodesById(root, kind).keys()];
-}
-
 function indexTreeParentsByChildren(root: Node): Map<Node, Node> {
   const out = new Map();
   crawl(
@@ -86,12 +79,18 @@ function loadIdGroup(
   afterRoot: RootNode,
   kind: NodeKind.TightLeaf | NodeKind.Loose,
 ): IdGroup {
-  const before = treeToIds(beforeRoot, kind);
-  const after = treeToIds(afterRoot, kind);
+  const before = indexTreeNodesById(beforeRoot, kind);
+  const after = indexTreeNodesById(afterRoot, kind);
+  const common = new Set<Id>();
+  for (const k of before.keys()) {
+    if (after.has(k)) {
+      common.add(k);
+    }
+  }
   return {
-    before,
-    after,
-    common: new Set(R.intersection(before, after)),
+    before: [...before.keys()],
+    after: [...after.keys()],
+    common,
   };
 }
 
