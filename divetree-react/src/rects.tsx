@@ -58,54 +58,76 @@ function padColor(color: number[]): number[] {
   }
 }
 
-function mixColors(progress: number, _a: number[], _b: number[]): string {
+function progressLerpColors(
+  _a: number[],
+  _b: number[],
+  progress?: string | number,
+): string {
   const a = padColor(_a);
   const b = padColor(_b);
-  const mixed = a.map((e, i) => e * (1 - progress) + b[i] * progress);
-  for (let i = 0; i < 3; i++) {
-    mixed[i] = Math.floor(mixed[i]);
-  }
+  const mixed = a.map((v, i) =>
+    progressLerp(Math.round(v), Math.round(b[i]), progress),
+  );
   return `rgba(${mixed.join(", ")})`;
 }
 
-function getFocusColor(progress: number, id: Id, getStyle: GetStyle): string {
-  return mixColors(
-    progress,
+function getFocusColor(
+  id: Id,
+  getStyle: GetStyle,
+  progress: string | number,
+): string {
+  return progressLerpColors(
     getStyle(id, false).color,
     getStyle(id, true).color,
+    progress,
   );
 }
 
 function getFocusBorderColor(
-  progress: number,
   id: Id,
   getStyle: GetStyle,
+  progress: string | number,
 ): string {
-  return mixColors(
-    progress,
+  return progressLerpColors(
     getStyle(id, false).borderColor,
     getStyle(id, true).borderColor,
+    progress,
   );
 }
 
-function toFocusProgress(progress: number, target: number) {
-  return 1 - Math.min(1, Math.abs(progress - target));
-}
-
-function progressLerp(a: string | number, b: string | number): string {
-  const t = `var(${progressProperty})`;
+function progressLerp(
+  a: string | number,
+  b: string | number,
+  progress?: string | number,
+): string | number {
+  if (a === b) {
+    return a;
+  }
+  const t = progress ?? `var(${progressProperty})`;
   return `calc((1 - ${t}) * (${a}) + ${t} * (${b}))`;
 }
 
-function fromMaybeConstant<T, O>(
-  maybe: MaybeConstant<T>,
-  fromValue: (v: T) => O,
-  fromLinearFunction: (a: T, b: T) => O,
-): O {
+function fromMaybeConstant<A, B, C>(
+  maybe: MaybeConstant<A>,
+  map: (v: A) => B,
+  join: (a: B, b: B) => C,
+  only: (v: B) => C,
+): C;
+function fromMaybeConstant<A, B, C>(
+  maybe: MaybeConstant<A>,
+  map: (v: A) => B,
+  join: (a: B, b: B) => C,
+): B | C;
+function fromMaybeConstant<A, B, C>(
+  maybe: MaybeConstant<A>,
+  map: (v: A) => B,
+  join: (a: B, b: B) => C,
+  only: (v: B) => B | C = (v) => v,
+): B | C {
   if (maybe.kind === MaybeConstantKind.Constant) {
-    return fromValue(maybe.value);
+    return only(map(maybe.value));
   } else {
-    return fromLinearFunction(maybe.from, maybe.to);
+    return join(map(maybe.from), map(maybe.to));
   }
 }
 
@@ -153,82 +175,90 @@ export const Rects = ({
   return (
     <div style={{ [progressProperty]: progress }}>
       {rectInterpolators.map((r) => {
-        const absLifecycle = fromMaybeConstant<number, string | number>(
+        const absLifecycle = fromMaybeConstant(
           r.lifecycle,
           (v) => Math.abs(v),
-          (a, b) => progressLerp(Math.abs(a), Math.abs(b)),
+          (a, b) => progressLerp(a, b),
+        );
+        const [width, height] = [0, 1].map((i) =>
+          fromMaybeConstant(
+            r.withoutScaling,
+            (v) => asRoundedPx(v.size[i]),
+            (a, b) => progressLerp(a, b),
+          ),
+        );
+        const zIndex = fromMaybeConstant(
+          r.lifecycle,
+          (v) => 1 - Math.ceil(Math.abs(v)),
+          (a, b) => Math.min(a, b),
         );
 
-        const e = drawRectFromInterpolator(r, progress);
-
-        let focusProgress: number | undefined;
-        if (e.id === oldFocusId && e.id === newFocusId) {
+        let focusProgress: string | number | undefined;
+        if (r.id === oldFocusId && r.id === newFocusId) {
           focusProgress = 1;
-        } else if (e.id === oldFocusId) {
-          focusProgress = toFocusProgress(progress, 0);
-        } else if (e.id === newFocusId) {
-          focusProgress = toFocusProgress(progress, 1);
+        } else if (r.id === oldFocusId) {
+          focusProgress = `calc(1 - var(${progressProperty}))`;
+        } else if (r.id === newFocusId) {
+          focusProgress = `var(${progressProperty})`;
         }
 
         let transform = fromMaybeConstant(
           r.withoutScaling,
-          (v) =>
-            `translate(
-               ${asRoundedPx(v.offset[0])},
-               ${asRoundedPx(v.offset[1])}
-             )`,
+          (v) => v.offset.map((e) => asRoundedPx(e)),
           (a, b) =>
             `translate(
-               ${progressLerp(
-                 asRoundedPx(a.offset[0]),
-                 asRoundedPx(b.offset[0]),
-               )},
-               ${progressLerp(
-                 asRoundedPx(a.offset[1]),
-                 asRoundedPx(b.offset[1]),
-               )}
+               ${progressLerp(a[0], b[0])},
+               ${progressLerp(a[1], b[1])}
              )`,
+          (v) => `translate(${v.join(", ")})`,
         );
+        let transformOrigin = undefined;
         if (r.withScaling) {
           transform =
             fromMaybeConstant(
               r.withScaling,
-              (v) => (v.scale === 1 ? "" : `scale(${v.scale})`),
-              (a, b) => `scale(${progressLerp(a.scale, b.scale)})`,
+              (v) => v.scale,
+              (a, b) => `scale(${progressLerp(a, b)})`,
+              (v) => (v === 1 ? "" : `scale(${v})`),
             ) +
             " " +
             transform;
+          transformOrigin = fromMaybeConstant(
+            r.withScaling,
+            (v) => v.origin.map((e) => asRoundedPx(e)),
+            (a, b) => a.map((v, i) => progressLerp(v, b[i])).join(" "),
+            (v) => v.join(" "),
+          );
         }
+
         return (
           <div
-            key={e.id}
+            key={r.id}
             style={{
               ...styles.rect,
-              width: e.withoutScaling.size[0],
-              height: e.withoutScaling.size[1],
+              width,
+              height,
               transform,
-              transformOrigin:
-                e.withScaling &&
-                e.withScaling.origin.map((v) => roundPixel(v) + "px").join(" "),
+              transformOrigin,
               opacity: `calc(1 - ${absLifecycle})`,
-              zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
+              zIndex,
               background: getFocusColor(
-                focusProgress ?? 0,
-                e.id,
+                r.id,
                 getStyle || DEFAULT_GET_STYLE,
+                focusProgress ?? 0,
               ),
               borderColor: getFocusBorderColor(
-                focusProgress ?? 0,
-                e.id,
+                r.id,
                 getStyle || DEFAULT_GET_STYLE,
+                focusProgress ?? 0,
               ),
               ...(getStyle || DEFAULT_GET_STYLE)(
-                e.id,
+                r.id,
                 focusProgress !== undefined,
               ).extra,
             }}
           >
-            {getContent(e.id)}
+            {getContent(r.id)}
           </div>
         );
       })}
