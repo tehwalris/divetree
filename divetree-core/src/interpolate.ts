@@ -69,14 +69,8 @@ function arraysEqual(a: number[], b: number[]): boolean {
 }
 
 export interface DrawRectScaling {
-  precomputed: {
-    size: number[];
-    offset: number[];
-  };
-  info: {
-    scale: number;
-    origin: number[];
-  };
+  scale: number;
+  origin: number[];
 }
 
 export interface DrawRectInterpolator {
@@ -124,14 +118,8 @@ export function drawRectFromInterpolator(
     withScaling:
       interpolator.withScaling &&
       fromMaybeConstant(interpolator.withScaling, t, (a, b, t) => ({
-        precomputed: {
-          size: lerpArray(a.precomputed.size, b.precomputed.size, t),
-          offset: lerpArray(a.precomputed.offset, b.precomputed.offset, t),
-        },
-        info: {
-          scale: lerp(a.info.scale, b.info.scale, t),
-          origin: lerpArray(a.info.origin, b.info.origin, t),
-        },
+        scale: lerp(a.scale, b.scale, t),
+        origin: lerpArray(a.origin, b.origin, t),
       })),
     transitionBound: interpolator.transitionBound,
   };
@@ -203,14 +191,8 @@ export function makeInterpolators(
           offset: e.offset,
         }),
         withScaling: fromFunction((t) => ({
-          precomputed: {
-            size: mixVector([0, 0], e.size, finalMix(t)),
-            offset: mixVector(origin(t), e.offset, finalMix(t)),
-          },
-          info: {
-            scale: finalMix(t),
-            origin: origin(t),
-          },
+          scale: finalMix(t),
+          origin: origin(t),
         })),
       };
     });

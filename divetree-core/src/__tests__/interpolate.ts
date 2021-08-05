@@ -100,19 +100,8 @@ function drawRectEqualEnough(a: DrawRect, b: DrawRect): boolean {
     return baseMatches;
   }
   return (
-    a.withScaling.info.scale === b.withScaling!.info.scale &&
-    vector2dEqualEnough(
-      a.withScaling.info.origin,
-      b.withScaling!.info.origin,
-    ) &&
-    vector2dEqualEnough(
-      a.withScaling.precomputed.size,
-      b.withScaling!.precomputed.size,
-    ) &&
-    vector2dEqualEnough(
-      a.withScaling.precomputed.offset,
-      b.withScaling!.precomputed.offset,
-    )
+    a.withScaling.scale === b.withScaling!.scale &&
+    vector2dEqualEnough(a.withScaling.origin, b.withScaling!.origin)
   );
 }
 
@@ -164,14 +153,8 @@ describe("makeInterpolator", () => {
             offset: [40, 40],
           },
           withScaling: {
-            precomputed: {
-              size: [5, 2.5],
-              offset: [23.1, 35.3],
-            },
-            info: {
-              scale: 0.25,
-              origin: [17.5, 33.7],
-            },
+            scale: 0.25,
+            origin: [17.5, 33.7],
           },
         },
         {
@@ -182,14 +165,8 @@ describe("makeInterpolator", () => {
             offset: [30, 40],
           },
           withScaling: {
-            precomputed: {
-              size: [10, 10],
-              offset: [20.625, 35.3125],
-            },
-            info: {
-              scale: 0.25,
-              origin: [17.5, 33.75],
-            },
+            scale: 0.25,
+            origin: [17.5, 33.75],
           },
         },
       ],
@@ -213,14 +190,8 @@ describe("makeInterpolator", () => {
             offset: [50, 60],
           },
           withScaling: {
-            precomputed: {
-              size: [7.5, 7.5],
-              offset: [41.875, 53.4375],
-            },
-            info: {
-              scale: 0.75,
-              origin: [17.5, 33.75],
-            },
+            scale: 0.75,
+            origin: [17.5, 33.75],
           },
         },
         {
@@ -231,14 +202,8 @@ describe("makeInterpolator", () => {
             offset: [10, 40],
           },
           withScaling: {
-            precomputed: {
-              size: [30, 30],
-              offset: [11.8, 38.4],
-            },
-            info: {
-              scale: 0.75,
-              origin: [17.5, 33.7],
-            },
+            scale: 0.75,
+            origin: [17.5, 33.7],
           },
         },
       ],

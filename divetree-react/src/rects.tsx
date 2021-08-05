@@ -193,8 +193,8 @@ export const Rects = ({
           transform =
             fromMaybeConstant(
               r.withScaling,
-              (v) => (v.info.scale === 1 ? "" : `scale(${v.info.scale})`),
-              (a, b) => `scale(${progressLerp(a.info.scale, b.info.scale)})`,
+              (v) => (v.scale === 1 ? "" : `scale(${v.scale})`),
+              (a, b) => `scale(${progressLerp(a.scale, b.scale)})`,
             ) +
             " " +
             transform;
@@ -209,9 +209,7 @@ export const Rects = ({
               transform,
               transformOrigin:
                 e.withScaling &&
-                e.withScaling.info.origin
-                  .map((v) => roundPixel(v) + "px")
-                  .join(" "),
+                e.withScaling.origin.map((v) => roundPixel(v) + "px").join(" "),
               opacity: `calc(1 - ${absLifecycle})`,
               zIndex: 1 - Math.ceil(Math.abs(e.lifecycle)),
               background: getFocusColor(
