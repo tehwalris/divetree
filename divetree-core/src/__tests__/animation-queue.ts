@@ -24,6 +24,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "a"],
       progress: 1,
       didChange: true,
+      didShift: false,
     });
     expect(springFn.mock.calls).toEqual([
       [{ position: 2, velocity: 0, target: 2, dtMillis: 0 }],
@@ -38,6 +39,7 @@ describe("AnimationQueue", () => {
         interval: ["a", "a"],
         progress: 1,
         didChange: i === 0,
+        didShift: false,
       });
     });
   });
@@ -70,6 +72,7 @@ describe("AnimationQueue", () => {
         interval: ["a", "a"],
         progress: e.progress,
         didChange: true,
+        didShift: false,
       });
       expect(springFn).toHaveBeenLastCalledWith({
         target: 2,
@@ -88,6 +91,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "a"],
       progress: 1.25,
       didChange: true,
+      didShift: false,
     });
   });
 
@@ -101,6 +105,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "b"],
       progress: 0.25,
       didChange: true,
+      didShift: true,
     });
   });
 
@@ -115,6 +120,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "c"],
       progress: 0.25,
       didChange: true,
+      didShift: true,
     });
     expect(springFn).toHaveBeenLastCalledWith({
       position: 2,
@@ -128,6 +134,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "c"],
       progress: 1,
       didChange: true,
+      didShift: false,
     });
     expect(springFn).toHaveBeenLastCalledWith({
       // position coordinate system shifted by -1
@@ -148,6 +155,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "a"],
       progress: 0.75,
       didChange: true,
+      didShift: false,
     });
   });
 
@@ -165,6 +173,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "b"],
       progress: 1.25,
       didChange: true,
+      didShift: true,
     });
 
     // move past c
@@ -174,6 +183,7 @@ describe("AnimationQueue", () => {
       interval: ["b", "c"],
       progress: 1.25,
       didChange: true,
+      didShift: true,
     });
     expect(springFn).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
@@ -188,6 +198,7 @@ describe("AnimationQueue", () => {
       interval: ["a", "b"],
       progress: 0.5,
       didChange: true,
+      didShift: false,
     });
     expect(springFn).toHaveBeenLastCalledWith({
       position: 2.25, // 3.25 - 1
@@ -202,6 +213,7 @@ describe("AnimationQueue", () => {
       interval: ["b", "c"],
       progress: 0.25,
       didChange: true,
+      didShift: false,
     });
   });
 
@@ -213,12 +225,14 @@ describe("AnimationQueue", () => {
       interval: ["a", "a"],
       progress: 999998,
       didChange: true,
+      didShift: false,
     });
     springFn.mockReturnValueOnce({ position: -999999, velocity: 0 });
     expect(queue.tick(0)).toEqual({
       interval: ["a", "a"],
       progress: -999999,
       didChange: true,
+      didShift: false,
     });
   });
 });
