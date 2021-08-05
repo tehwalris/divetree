@@ -1,2 +1,2 @@
 export { NavTree } from "./nav-tree";
-export { RectStyle } from "./rects";
+export { RectStyle } from "./rect";

@@ -1,6 +1,6 @@
 import { DrawRectInterpolator, Id, SpringPath } from "divetree-core";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Rect, RectStyle } from "./rect";
 
 const progressProperty: string = "--divetree-rects-progress";
@@ -31,7 +31,8 @@ export const Rects = ({
   getStyle,
   progressPath,
 }: Props) => {
-  const [progress, setProgress] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef(0);
   useEffect(() => {
     let shouldStop = false;
 
@@ -47,8 +48,16 @@ export const Rects = ({
       }
       const dt = t - startT;
 
+      // TODO stop animation when endOfPath?
       const { result, endOfPath } = progressPath.getResult(dt);
-      setProgress(result.position);
+      progressRef.current = result.position;
+
+      if (wrapperRef.current) {
+        wrapperRef.current.style.setProperty(
+          progressProperty,
+          "" + progressRef.current,
+        );
+      }
 
       requestAnimationFrame(animationCallback);
     }
@@ -58,10 +67,10 @@ export const Rects = ({
     return () => {
       shouldStop = true;
     };
-  }, [progressPath]);
+  }, [progressPath, progressProperty]);
 
   return (
-    <div style={{ [progressProperty]: progress }}>
+    <div ref={wrapperRef} style={{ [progressProperty]: progressRef.current }}>
       {rectInterpolators.map((r) => (
         <Rect
           key={r.id}
