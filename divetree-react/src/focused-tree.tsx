@@ -24,6 +24,7 @@ interface Props {
   focusedId: Id | undefined;
   getContent: GetContent;
   getStyle?: GetStyle;
+  onRectClick?: (ev: React.MouseEvent, rectId: Id) => void;
 }
 
 interface State {
@@ -267,6 +268,7 @@ export class FocusedTree extends React.Component<Props, State> {
           getContent={this.props.getContent}
           getStyle={this.props.getStyle}
           progressPath={queueProgressPath}
+          onClick={this.props.onRectClick}
         />
       </Viewport>
     );

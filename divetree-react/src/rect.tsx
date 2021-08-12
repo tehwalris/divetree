@@ -15,6 +15,7 @@ interface Props {
   focusedStyle: RectStyle;
   oldFocusId: Id | undefined;
   newFocusId: Id | undefined;
+  onClick?: (ev: React.MouseEvent) => void;
 }
 
 export interface RectStyle {
@@ -123,6 +124,7 @@ export const Rect = ({
   notFocusedStyle,
   oldFocusId,
   newFocusId,
+  onClick,
 }: Props) => {
   const progressLerp = (
     a: string | number,
@@ -188,6 +190,7 @@ export const Rect = ({
   return (
     <div
       key={r.id}
+      onClick={onClick}
       style={{
         ...styles.rect,
         width,

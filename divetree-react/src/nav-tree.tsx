@@ -1,11 +1,12 @@
-import * as React from "react";
-import { useState, useEffect, useRef } from "react";
 import {
-  RootNode as DivetreeNode,
-  NavNode,
+  Id,
   NavIndex,
   NavIndexNode,
+  NavNode,
+  RootNode as DivetreeNode,
 } from "divetree-core";
+import * as React from "react";
+import { useEffect, useRef } from "react";
 import { FocusedTree } from "./focused-tree";
 import { GetContent, GetStyle } from "./rects";
 
@@ -19,6 +20,7 @@ interface Props {
   disableNav?: boolean;
   onKeyDown?: (event: KeyboardEvent, focusedId: string) => boolean | undefined;
   onKeyUp?: (event: KeyboardEvent, focusedId: string) => void;
+  onRectClick?: (ev: React.MouseEvent, rectId: Id) => void;
 }
 
 export const NavTree: React.FC<Props> = ({
@@ -31,6 +33,7 @@ export const NavTree: React.FC<Props> = ({
   disableNav,
   onKeyDown,
   onKeyUp,
+  onRectClick,
 }) => {
   // TODO The will currently keep growing with no limit
   const lastVisitedChildren = useRef(new Map<string, string>());
@@ -107,6 +110,7 @@ export const NavTree: React.FC<Props> = ({
       focusedId={focusedNavNode.original.id}
       getContent={getContent}
       getStyle={getStyle}
+      onRectClick={onRectClick}
     />
   );
 };

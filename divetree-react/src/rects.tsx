@@ -16,6 +16,7 @@ interface Props {
   getContent: GetContent;
   getStyle?: GetStyle;
   progressPath: SpringPath;
+  onClick?: (ev: React.MouseEvent, rectId: Id) => void;
 }
 
 const DEFAULT_GET_STYLE: GetStyle = (id, focused) =>
@@ -30,6 +31,7 @@ export const Rects = ({
   getContent,
   getStyle,
   progressPath,
+  onClick,
 }: Props) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
@@ -80,6 +82,7 @@ export const Rects = ({
           focusedStyle={(getStyle || DEFAULT_GET_STYLE)(r.id, true)}
           oldFocusId={oldFocusId}
           newFocusId={newFocusId}
+          onClick={onClick && ((ev) => onClick(ev, r.id))}
         >
           {getContent(r.id)}
         </Rect>
